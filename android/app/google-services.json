@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "92826655668",
+    "project_id": "twitter-task-6e6b1",
+    "storage_bucket": "twitter-task-6e6b1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:92826655668:android:892f5b82a4ba95f1f170e1",
+        "android_client_info": {
+          "package_name": "com.example.twitter_task"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB3VBBaQg9DxsUzR9E-ndRXaoj3eKCIqdQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

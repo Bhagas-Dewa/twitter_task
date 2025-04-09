@@ -1,0 +1,50 @@
+name: twitter_task
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_svg: ^2.0.9
+  get: ^4.7.2
+  firebase_core: ^3.12.1
+  google_sign_in: ^6.3.0
+  firebase_auth: ^5.5.1
+  image_picker: ^1.1.2
+  cloud_firestore: ^5.6.5
+  intl: ^0.18.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/fonts/
+  
+  fonts:
+    - family: HelveticaNeue
+      fonts:
+        - asset: assets/fonts/HelveticaNeue.ttf
+        - asset: assets/fonts/HelveticaNeue400.ttf
+          weight: 400
+        - asset: assets/fonts/HelveticaNeue500.ttf
+          weight: 500
+        - asset: assets/fonts/HelveticaNeue600.ttf
+          weight: 600
+        - asset: assets/fonts/HelveticaNeue700.ttf
+          weight: 700
+        - asset: assets/fonts/HelveticaNeue800.ttf
+          weight: 800
+        - asset: assets/fonts/HelveticaNeue900.ttf
+          weight: 900
+        - asset: assets/fonts/HelveticaNeueIt.ttf
+          style: italic
