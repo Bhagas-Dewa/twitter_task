@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:twitter_task/controller/auth_controller.dart';
 import 'package:twitter_task/controller/sidebar_controller.dart';
+import 'package:twitter_task/controller/user_controller.dart';
 import 'package:twitter_task/views/bookmarks/bookmarks_page.dart';
 import 'package:twitter_task/views/sidebar/lists/lists_page.dart';
 import 'package:twitter_task/views/sidebar/moments/moments_page.dart';
@@ -29,7 +32,7 @@ class Sidebar extends StatelessWidget {
               color: Colors.transparent,
             ),
           ),
-           Align(
+          Align(
             alignment: Alignment.centerLeft,
             child: SlideTransition(
               position: sidebarController.slideAnimation,
@@ -76,11 +79,25 @@ class Sidebar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Image.asset(
-            'assets/images/sidebar_pp.png',
-            height: 55,
-            width: 55,
-          ),
+          Obx(() {
+            final user = Get.find<UserController>().currentUser.value;
+            final base64Image = user?.profilePicture ?? '';
+            final imageProvider =
+                (base64Image.isNotEmpty)
+                    ? MemoryImage(base64Decode(base64Image))
+                    : const AssetImage('assets/images/photoprofile_dummy.png')
+                        as ImageProvider;
+
+            return Container(
+              height: 55,
+              width: 55,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
+              ),
+            );
+          }),
+
           Row(
             children: [
               _buildIcon('assets/images/sidebar_pp3.png'),
@@ -96,40 +113,41 @@ class Sidebar extends StatelessWidget {
   }
 
   Widget _buildIcon(String assetPath) {
-    return Image.asset(
-      assetPath,
-      height: 32,
-      width: 32,
-    );
+    return Image.asset(assetPath, height: 32, width: 32);
   }
-
 
   Widget _buildUserInfo() {
     return Obx(() {
-      final user = _authController.currentUser;
-      final displayName = user?.displayName ?? 'Guest';
-      final username = user?.displayName?.toLowerCase().replaceAll(' ', '') ?? 'guest';
+      final user = Get.find<UserController>().currentUser.value;
+
+      if (user == null) {
+        return const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24),
+          child: CircularProgressIndicator(),
+        );
+      }
+
       return Padding(
         padding: const EdgeInsets.only(left: 24, right: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              displayName, 
+              user.name,
               style: const TextStyle(
                 fontSize: 19,
                 fontWeight: FontWeight.bold,
                 fontFamily: 'HelveticaNeue100',
-                ),
               ),
+            ),
             Text(
-              '@$username',
-              style: TextStyle(
-                fontSize: 16, 
+              user.username,
+              style: const TextStyle(
+                fontSize: 16,
                 color: Color(0xff687684),
                 fontFamily: 'HelveticaNeue',
-                ),
               ),
+            ),
             const SizedBox(height: 16),
             _buildUserStats(),
           ],
@@ -140,7 +158,7 @@ class Sidebar extends StatelessWidget {
 
   Widget _buildUserStats() {
     return Row(
-       children: [
+      children: [
         Text(
           '216',
           style: TextStyle(
@@ -150,14 +168,15 @@ class Sidebar extends StatelessWidget {
             fontSize: 16,
             letterSpacing: -1,
           ),
-        ), SizedBox(width: 5),
+        ),
+        SizedBox(width: 5),
         Text(
           'Following',
           style: TextStyle(
             color: Color(0xff687684),
             fontFamily: 'HelveticaNeue',
             fontWeight: FontWeight.w600,
-            fontSize: 16
+            fontSize: 16,
           ),
         ),
         SizedBox(width: 20),
@@ -170,118 +189,109 @@ class Sidebar extends StatelessWidget {
             fontSize: 16,
             letterSpacing: -1,
           ),
-        ), SizedBox(width: 5),
+        ),
+        SizedBox(width: 5),
         Text(
           'Followers',
           style: TextStyle(
             color: Color(0xff687684),
             fontFamily: 'HelveticaNeue',
             fontWeight: FontWeight.w600,
-            fontSize: 16
+            fontSize: 16,
           ),
         ),
       ],
-    );                   
+    );
   }
 
   Widget _buildMenu() {
-  final menuItems = ['Profile', 'Lists', 'Topics', 'Bookmarks', 'Moments'];
-  final menuIcons = [
-    'sidebar_profile.png',
-    'sidebar_list.png',
-    'sidebar_topics.png',
-    'sidebar_bookmarks.png',
-    'sidebar_moments.png',
-  ];
+    final menuItems = ['Profile', 'Lists', 'Topics', 'Bookmarks', 'Moments'];
+    final menuIcons = [
+      'sidebar_profile.png',
+      'sidebar_list.png',
+      'sidebar_topics.png',
+      'sidebar_bookmarks.png',
+      'sidebar_moments.png',
+    ];
 
-  // List halaman tujuan
-  final pages = [
-    ProfilePage(), 
-    ListsPage(),
-    TopicsPage(),
-    BookmarksPage(),
-    MomentsPage(),
-  ];
+    // List halaman tujuan
+    final pages = [
+      ProfilePage(),
+      ListsPage(),
+      TopicsPage(),
+      BookmarksPage(),
+      MomentsPage(),
+    ];
 
-  return Padding(
-    padding: const EdgeInsets.only(left: 24, right: 16),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: List.generate(menuIcons.length, (index) {
-            return _buildMenuItem(menuIcons[index], menuItems[index], pages[index]);
-          }),
-        ),
-      ],
-    ),
-  );
-}
-
-
-Widget _buildMenuItem(String icon, String text, Widget page) {
-  return GestureDetector(
-    onTap: () {
-      Get.to(() => page);            
-    },
-    child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 13),
+    return Padding(
+      padding: const EdgeInsets.only(left: 24, right: 16),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Image.asset('assets/images/$icon', height: 24, width: 24),
-          const SizedBox(width: 20),
-          Text(
-            text,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontFamily: 'HelveticaNeue100',
-              fontSize: 18,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: List.generate(menuIcons.length, (index) {
+              return _buildMenuItem(
+                menuIcons[index],
+                menuItems[index],
+                pages[index],
+              );
+            }),
           ),
         ],
       ),
-    ),
-  );
-}
+    );
+  }
 
-
-Widget _buildMenuIcon(String assetName) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 14),
-    child: Image.asset('assets/images/$assetName', height: 24, width: 24),
-  );
-}
-
-Widget _buildMenuText(String text) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 13),
-    child: Text(
-      text,
-      style: const TextStyle(
-        fontWeight: FontWeight.w500,
-        fontFamily: 'Helvetivaneue',
-        fontSize: 18,
+  Widget _buildMenuItem(String icon, String text, Widget page) {
+    return GestureDetector(
+      onTap: () {
+        Get.to(() => page);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        child: Row(
+          children: [
+            Image.asset('assets/images/$icon', height: 24, width: 24),
+            const SizedBox(width: 20),
+            Text(
+              text,
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontFamily: 'HelveticaNeue100',
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
+  Widget _buildMenuIcon(String assetName) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Image.asset('assets/images/$assetName', height: 24, width: 24),
+    );
+  }
+
+  Widget _buildMenuText(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 13),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontFamily: 'Helvetivaneue',
+          fontSize: 18,
+        ),
+      ),
+    );
+  }
 
   Widget _buildDivider() {
     return const Divider(color: Color(0xffBDC5CD), thickness: 0.35);
   }
-
-  // Widget _buildSettings() {
-  //   final settings = ['Settings and privacy', 'Help center', 'Logout'];
-  //   return Padding(
-  //     padding: const EdgeInsets.symmetric(horizontal: 24.0),
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: settings.map((text) => _buildMenuText(text)).toList(),
-  //     ),
-  //   );
-  // }
 
   Widget _buildSettings() {
     final settings = ['Settings and privacy', 'Help center', 'Logout'];
@@ -289,20 +299,21 @@ Widget _buildMenuText(String text) {
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: settings.map((text) {
-          return GestureDetector(
-            onTap: () {
-              if (text == 'Settings and privacy') {
-                Get.to(() => SettingsPrivacyPage()); 
-              } else if (text == 'Help center') {
-                // Get.to(() => HelpCenterPage()); 
-              } else if (text == 'Logout') {
-                _authController.signOut();
-              }
-            },
-            child: _buildMenuText(text),
-          );
-        }).toList(),
+        children:
+            settings.map((text) {
+              return GestureDetector(
+                onTap: () {
+                  if (text == 'Settings and privacy') {
+                    Get.to(() => SettingsPrivacyPage());
+                  } else if (text == 'Help center') {
+                    // Get.to(() => HelpCenterPage());
+                  } else if (text == 'Logout') {
+                    _authController.signOut();
+                  }
+                },
+                child: _buildMenuText(text),
+              );
+            }).toList(),
       ),
     );
   }

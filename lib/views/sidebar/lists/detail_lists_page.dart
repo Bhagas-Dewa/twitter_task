@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:twitter_task/controller/user_controller.dart';
 import 'package:twitter_task/views/sidebar/lists/edit_list_page.dart';
 
 class DetailListPage extends StatelessWidget {
@@ -93,23 +94,51 @@ class DetailListPage extends StatelessWidget {
                       style: TextStyle(fontSize: 18, color: Colors.black),
                     ),
                   SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        createdByName,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '@$createdByUsername',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                      ),
-                    ],
+                  FutureBuilder(
+                    future: Get.find<UserController>().getUserById(
+                      listData['createdBy'],
+                    ),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Loading...",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+
+                      final user = snapshot.data!;
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            user.name,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            user.username,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xff687684),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
+
                   SizedBox(height: 15),
                   ElevatedButton(
                     onPressed: () {
@@ -156,7 +185,7 @@ class DetailListPage extends StatelessWidget {
                             fontSize: 16,
                             color: Color(0xff687684),
                             fontWeight: FontWeight.w500,
-                            ),
+                          ),
                         ),
                       ],
                     ),

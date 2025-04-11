@@ -1,26 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:twitter_task/controller/auth_controller.dart';
+import 'package:twitter_task/controller/user_controller.dart';
 
 class ProfileUserInformation extends StatelessWidget {
   ProfileUserInformation({super.key});
 
-  final AuthController _authController = Get.find<AuthController>();
+  final userController = Get.find<UserController>();
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final user = _authController.currentUser;
-      final displayName = user?.displayName ?? 'Guest';
-      final username = user?.displayName?.toLowerCase().replaceAll(' ', '') ?? 'guest';
+      final user = userController.currentUser.value;
+
+      if (user == null) {
+        return const Center(child: CircularProgressIndicator());
+      }
 
       return Padding(
-        padding: const EdgeInsets.only(left: 20, right: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              displayName,
+              user.name,
               style: const TextStyle(
                 fontSize: 19,
                 fontWeight: FontWeight.bold,
@@ -28,20 +30,21 @@ class ProfileUserInformation extends StatelessWidget {
               ),
             ),
             Text(
-              '@$username',
+              user.username,
               style: const TextStyle(
                 fontSize: 16,
                 color: Color(0xff687684),
                 fontFamily: 'HelveticaNeue',
               ),
             ),
-            SizedBox(height: 10),
+
+            const SizedBox(height: 10),
             _buildUserBio(),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             _buildUserDescription(),
-            SizedBox(height: 8),
-            _buildUserStats(), 
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
+            _buildUserStats(),
+            const SizedBox(height: 8),
           ],
         ),
       );
@@ -56,20 +59,17 @@ class ProfileUserInformation extends StatelessWidget {
         color: Colors.black,
         fontFamily: 'HelveticaNeue',
         fontWeight: FontWeight.w600,
-        height: 1.25
+        height: 1.25,
       ),
     );
   }
-  
+
   Widget _buildUserDescription() {
     return Row(
       children: [
-        Image.asset(
-          'assets/images/profile_link.png',
-          height: 14,
-          width: 14,
-        ), SizedBox(width: 6),
-        Text(
+        Image.asset('assets/images/profile_link.png', height: 14, width: 14),
+        const SizedBox(width: 6),
+        const Text(
           'pixsellz.oi',
           style: TextStyle(
             fontSize: 14,
@@ -79,13 +79,14 @@ class ProfileUserInformation extends StatelessWidget {
             letterSpacing: -0.2,
           ),
         ),
-        SizedBox(width: 20),
+        const SizedBox(width: 20),
         Image.asset(
           'assets/images/profile_calender.png',
           height: 14,
           width: 14,
-        ), SizedBox(width: 6),
-        Text(
+        ),
+        const SizedBox(width: 6),
+        const Text(
           'Joined September 2018',
           style: TextStyle(
             fontSize: 14,
@@ -101,8 +102,8 @@ class ProfileUserInformation extends StatelessWidget {
 
   Widget _buildUserStats() {
     return Row(
-       children: [
-        Text(
+      children: [
+        const Text(
           '216',
           style: TextStyle(
             color: Colors.black,
@@ -111,8 +112,9 @@ class ProfileUserInformation extends StatelessWidget {
             fontSize: 14,
             letterSpacing: -0.2,
           ),
-        ), SizedBox(width: 5),
-        Text(
+        ),
+        const SizedBox(width: 5),
+        const Text(
           'Following',
           style: TextStyle(
             color: Color(0xff687684),
@@ -122,8 +124,8 @@ class ProfileUserInformation extends StatelessWidget {
             letterSpacing: -0.2,
           ),
         ),
-        SizedBox(width: 20),
-        Text(
+        const SizedBox(width: 20),
+        const Text(
           '217',
           style: TextStyle(
             color: Colors.black,
@@ -132,8 +134,9 @@ class ProfileUserInformation extends StatelessWidget {
             fontSize: 14,
             letterSpacing: -0.2,
           ),
-        ), SizedBox(width: 5),
-        Text(
+        ),
+        const SizedBox(width: 5),
+        const Text(
           'Followers',
           style: TextStyle(
             color: Color(0xff687684),
@@ -144,7 +147,6 @@ class ProfileUserInformation extends StatelessWidget {
           ),
         ),
       ],
-    );                   
+    );
   }
-
 }

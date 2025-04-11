@@ -1,12 +1,15 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:twitter_task/views/sidebar/sidebar.dart';
 import 'package:twitter_task/controller/search_controller.dart';
+import 'package:twitter_task/controller/user_controller.dart';
+import 'package:twitter_task/views/sidebar/sidebar.dart';
 
 class AppBarSearch extends StatelessWidget implements PreferredSizeWidget {
   final SearchScreenController controller;
-  
-  const AppBarSearch({super.key, required this.controller});
+  final UserController userController = Get.find<UserController>();
+
+  AppBarSearch({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -22,19 +25,36 @@ class AppBarSearch extends StatelessWidget implements PreferredSizeWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              IconButton(
-                icon: Image.asset('assets/images/appbar_PP.png', height: 32, width: 32),
-                color: const Color(0xff4C9EEB),
-                onPressed: () {
-                  Get.to(() => Sidebar(), 
-                    transition: Transition.noTransition,
-                    fullscreenDialog: true,
-                    opaque: false,
-                  );
-                },
-              ),
-              
-              // Search Field
+              Obx(() {
+                final user = userController.currentUser.value;
+                final base64Image = user?.profilePicture ?? '';
+                final imageProvider = (base64Image.isNotEmpty)
+                    ? MemoryImage(base64Decode(base64Image))
+                    : const AssetImage('assets/images/photoprofile_dummy.png') as ImageProvider;
+
+                return IconButton(
+                  icon: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      image: DecorationImage(
+                        image: imageProvider,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  onPressed: () {
+                    Get.to(() => Sidebar(),
+                      transition: Transition.noTransition,
+                      fullscreenDialog: true,
+                      opaque: false,
+                    );
+                  },
+                );
+              }),
+
+              // 🔍 Search Field
               Expanded(
                 child: GestureDetector(
                   onTap: () => controller.toggleSuggestions(true),
@@ -50,13 +70,13 @@ class AppBarSearch extends StatelessWidget implements PreferredSizeWidget {
                       children: [
                         const SizedBox(width: 75),
                         Image.asset(
-                          'assets/images/appbarsearch_search.png', 
+                          'assets/images/appbarsearch_search.png',
                           height: 13,
                         ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: TextField(
-                            controller: controller.textController, // Gunakan textController
+                            controller: controller.textController,
                             decoration: const InputDecoration(
                               hintText: "Search Twitter",
                               hintStyle: TextStyle(
@@ -64,9 +84,9 @@ class AppBarSearch extends StatelessWidget implements PreferredSizeWidget {
                                 fontFamily: 'Helveticaneue',
                                 letterSpacing: -0.3,
                               ),
-                              border: InputBorder.none, 
+                              border: InputBorder.none,
                               contentPadding: EdgeInsets.symmetric(vertical: 0),
-                              isDense: true, 
+                              isDense: true,
                             ),
                             onTap: () => controller.toggleSuggestions(true),
                           ),
@@ -76,8 +96,8 @@ class AppBarSearch extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
               ),
-              
-              // Tombol settings
+
+              // ⚙️ Settings
               IconButton(
                 icon: Image.asset(
                   'assets/images/appbarsearch_settings.png',

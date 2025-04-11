@@ -37,6 +37,8 @@ class LikedTweetsTab extends StatelessWidget {
             final likedTweets = tweetSnapshot.data ?? [];
 
             return ListView.builder(
+              padding: EdgeInsets.zero,
+              physics: const ClampingScrollPhysics(), 
               itemCount: likedTweets.length,
               itemBuilder: (context, index) {
                 return TweetItem(tweet: likedTweets[index]);

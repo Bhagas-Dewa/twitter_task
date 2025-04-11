@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:twitter_task/controller/user_controller.dart';
 import 'package:twitter_task/services/auth_service.dart';
 import 'package:twitter_task/views/auth/welcome_page.dart';
 import 'package:twitter_task/views/home/home.dart';
@@ -35,8 +36,7 @@ class AuthController extends GetxController {
   bool isUserLoggedIn() {
     return _authService.isUserLoggedIn();
   }
-  
-  // Getter for current user
+
   User? get currentUser => _authService.currentUser;
   
   void togglePasswordVisibility() {
@@ -45,7 +45,6 @@ class AuthController extends GetxController {
   
   // Email & Password Login
   Future<void> login() async {
-    // Validate inputs
     if (emailController.text.isEmpty || passwordController.text.isEmpty) {
       Get.snackbar(
         'Login Error',
@@ -64,8 +63,9 @@ class AuthController extends GetxController {
         email: emailController.text,
         password: passwordController.text
       );
+
+      await Get.find<UserController>().fetchUserData();
       
-      // Success message
       Get.snackbar(
         'Login',
         'Login successful',
@@ -77,7 +77,6 @@ class AuthController extends GetxController {
       // Navigate to home screen
       Get.offAll(() => HomePage());
     } catch (e) {
-      // Handle login errors
       Get.snackbar(
         'Login Error',
         e.toString(),
@@ -96,6 +95,8 @@ class AuthController extends GetxController {
       isLoading.value = true;
       
       await _authService.signInWithGoogle();
+
+      await Get.find<UserController>().fetchUserData();
       
       Get.snackbar(
         'Google Sign In',
@@ -105,7 +106,6 @@ class AuthController extends GetxController {
         colorText: Colors.white
       );
       
-      // Navigate to home screen
       Get.offAll(() => HomePage());
     } catch (e) {
       if (e.toString() != 'Google sign in cancelled by user') {
@@ -124,7 +124,6 @@ class AuthController extends GetxController {
   
   // Registration
   Future<void> register() async {
-    // Validate inputs
     if (nameController.text.isEmpty) {
       Get.snackbar(
         'Registration Error',
@@ -177,6 +176,8 @@ class AuthController extends GetxController {
         email: emailController.text,
         password: passwordController.text
       );
+
+      await Get.find<UserController>().fetchUserData();
       
       Get.snackbar(
         'Registration',
@@ -189,7 +190,6 @@ class AuthController extends GetxController {
       // Navigate to home screen
       Get.offAll(() => HomePage());
     } catch (e) {
-      // Handle registration errors
       Get.snackbar(
         'Registration Error',
         e.toString(),
@@ -228,10 +228,8 @@ class AuthController extends GetxController {
         colorText: Colors.white
       );
       
-      // Navigate back to login page
       Get.back();
     } catch (e) {
-      // Handle forget password errors
       Get.snackbar(
         'Forget Password Error',
         e.toString(),
@@ -249,7 +247,6 @@ class AuthController extends GetxController {
     try {
       isLoading.value = true;
       
-      // Show loading indicator
       Get.dialog(
         Center(
           child: CircularProgressIndicator(),
@@ -260,20 +257,12 @@ class AuthController extends GetxController {
       // Sign out from Firebase
       await _authService.signOut();
 
-      //  _authService.user.value = null;
+      Get.find<UserController>().currentUser.value = null;
       
-      // Clear controllers
-      // emailController.clear();
-      // passwordController.clear();
-      // nameController.clear();
-      // confirmPasswordController.clear();
-      
-      // Close loading dialog
       if (Get.isDialogOpen!) {
         Get.back();
       }
       
-      // Navigate to welcome page
       Get.offAll(() => WelcomePage());
       
       Get.snackbar(
@@ -285,7 +274,6 @@ class AuthController extends GetxController {
       );
       
     } catch (e) {
-      // Close loading dialog if open
       if (Get.isDialogOpen!) {
         Get.back();
       }

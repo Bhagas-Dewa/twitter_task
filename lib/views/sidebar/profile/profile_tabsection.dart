@@ -12,9 +12,9 @@ class ProfileTabSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SliverList(
-      delegate: SliverChildListDelegate.fixed([
-        // TabBar (pinned di luar CustomScrollView bisa juga)
+    return Column(
+      children: [
+        // TabBar
         Container(
           color: Colors.white,
           child: TabBar(
@@ -40,8 +40,7 @@ class ProfileTabSection extends StatelessWidget {
         ),
 
         // TabBarView
-        SizedBox(
-          height: MediaQuery.of(context).size.height,
+        Expanded(
           child: TabBarView(
             controller: controller.tabController,
             children: controller.tabs.map((tab) {
@@ -52,7 +51,7 @@ class ProfileTabSection extends StatelessWidget {
             }).toList(),
           ),
         ),
-      ]),
+      ],
     );
   }
 }

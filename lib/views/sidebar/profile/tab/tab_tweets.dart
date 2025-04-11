@@ -42,6 +42,8 @@ class TweetsTab extends StatelessWidget {
         }
 
         return ListView.builder(
+          padding: EdgeInsets.only(top: 15),
+          physics: const ClampingScrollPhysics(), 
           itemCount: tweets.length,
           itemBuilder: (context, index) {
             final tweet = tweets[index];

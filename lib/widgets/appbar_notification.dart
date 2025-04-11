@@ -1,13 +1,16 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:twitter_task/controller/user_controller.dart';
 import 'package:twitter_task/views/sidebar/sidebar.dart';
 
 class AppbarNotification extends StatelessWidget implements PreferredSizeWidget {
-  
   const AppbarNotification({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final userController = Get.find<UserController>();
+
     return AppBar(
       automaticallyImplyLeading: false,
       backgroundColor: Colors.white,
@@ -18,22 +21,36 @@ class AppbarNotification extends StatelessWidget implements PreferredSizeWidget 
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              IconButton(
-                icon: Image.asset(
-                  'assets/images/appbar_PP.png',
-                  height: 32,
-                  width: 32,
-                ),
-                color: const Color(0xff4C9EEB),
-                onPressed: () {
-                  Get.to(() => Sidebar(), 
-                    transition: Transition.noTransition,
-                    fullscreenDialog: true,
-                    opaque: false,
-                  );
-                },
-              ),
-              Text(
+              Obx(() {
+                final user = userController.currentUser.value;
+                final base64Image = user?.profilePicture ?? '';
+                final imageProvider = (base64Image.isNotEmpty)
+                    ? MemoryImage(base64Decode(base64Image))
+                    : const AssetImage('assets/images/photoprofile_dummy.png') as ImageProvider;
+
+                return IconButton(
+                  icon: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      image: DecorationImage(
+                        image: imageProvider,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  onPressed: () {
+                    Get.to(() => Sidebar(),
+                      transition: Transition.noTransition,
+                      fullscreenDialog: true,
+                      opaque: false,
+                    );
+                  },
+                );
+              }),
+
+              const Text(
                 'Notifications',
                 style: TextStyle(
                   color: Colors.black,
@@ -43,6 +60,7 @@ class AppbarNotification extends StatelessWidget implements PreferredSizeWidget 
                   letterSpacing: -0.3,
                 ),
               ),
+
               IconButton(
                 icon: Image.asset(
                   'assets/images/appbarsearch_settings.png',

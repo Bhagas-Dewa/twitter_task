@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:twitter_task/controller/mail_controller.dart';
+import 'package:twitter_task/controller/message_controller.dart';
 import 'package:twitter_task/views/sidebar/sidebar.dart';
 
 class AppbarMessagesetting extends StatelessWidget implements PreferredSizeWidget {
   
   AppbarMessagesetting({super.key});
 
-  final mailController = Get.find<MailController>();
+  final mailController = Get.find<MessageController>();
 
   @override
   Widget build(BuildContext context) {

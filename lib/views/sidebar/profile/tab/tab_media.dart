@@ -33,6 +33,8 @@ class MediaTab extends StatelessWidget {
             .toList();
 
         return ListView.separated(
+          padding: EdgeInsets.zero,
+          physics: const ClampingScrollPhysics(), 
           itemCount: tweets.length,
           separatorBuilder: (_, __) => const Divider(height: 1),
           itemBuilder: (context, index) {

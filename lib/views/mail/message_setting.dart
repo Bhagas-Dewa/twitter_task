@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:twitter_task/widgets/appbar_messagesetting.dart';
 import 'package:twitter_task/widgets/toggle_switch.dart';
-import 'package:twitter_task/controller/mail_controller.dart'; 
+import 'package:twitter_task/controller/message_controller.dart'; 
 
 class MessageSetting extends StatelessWidget {
   MessageSetting({super.key});
 
-  final MailController mailController = Get.find<MailController>();
+  final MessageController mailController = Get.find<MessageController>();
 
   @override
   Widget build(BuildContext context) {
