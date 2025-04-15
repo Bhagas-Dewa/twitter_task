@@ -6,7 +6,6 @@ import 'package:get/get.dart';
 import 'package:twitter_task/controller/auth_controller.dart';
 import 'package:twitter_task/controller/message_controller.dart';
 import 'package:twitter_task/models/chat_room_model.dart';
-import 'package:twitter_task/models/user_model.dart';
 import 'package:twitter_task/views/mail/new_message_page.dart';
 import 'package:twitter_task/views/mail/roomchat_page.dart';
 import 'package:twitter_task/widgets/appbar_mail.dart';

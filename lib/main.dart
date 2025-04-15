@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:twitter_task/controller/auth_controller.dart';
 import 'package:twitter_task/controller/lists_controller.dart';
 import 'package:twitter_task/controller/message_controller.dart';
+import 'package:twitter_task/controller/tweet_controller.dart';
 import 'package:twitter_task/controller/user_controller.dart';
 import 'package:twitter_task/views/auth/welcome_page.dart';
 import 'package:twitter_task/services/auth_service.dart';
@@ -16,6 +17,7 @@ void main()  async{
   Get.put(AuthController());
   Get.put(AuthService());
   Get.put(MessageController());
+  Get.put(TweetController());
   Get.put(ListsController());
 
   runApp(const MainApp());

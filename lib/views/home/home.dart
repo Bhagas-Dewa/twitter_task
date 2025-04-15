@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:twitter_task/controller/auth_controller.dart';
+import 'package:twitter_task/controller/tweet_controller.dart';
 import 'package:twitter_task/views/home/addtweet_page.dart';
 import 'package:twitter_task/widgets/appbar_home.dart';
 import 'package:twitter_task/widgets/bottom_navbar.dart';
@@ -10,7 +11,7 @@ import 'package:twitter_task/widgets/tweet_item.dart';
 
 class HomePage extends StatelessWidget {
   final AuthController _authController = Get.find<AuthController>();
-  final HomeController homeController = Get.put(HomeController());
+  final TweetController homeController = Get.put(TweetController());
 
   HomePage({Key? key}) : super(key: key);
 

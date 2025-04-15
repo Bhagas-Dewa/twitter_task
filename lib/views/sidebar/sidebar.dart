@@ -88,12 +88,20 @@ class Sidebar extends StatelessWidget {
                     : const AssetImage('assets/images/photoprofile_dummy.png')
                         as ImageProvider;
 
-            return Container(
-              height: 55,
-              width: 55,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
+            return GestureDetector(
+              onTap: () {
+                Get.to(() => ProfilePage());
+              },
+              child: Container(
+                height: 55,
+                width: 55,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  image: DecorationImage(
+                    image: imageProvider,
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
             );
           }),

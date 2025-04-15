@@ -1,32 +1,153 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:twitter_task/models/tweet_model.dart';
+import 'package:twitter_task/models/tweetcontent_model.dart';
 
 class TweetController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  var currentUser = Rxn<User>();
 
+  // Tweet posting
+  var tweetController = TextEditingController();
+  var isTweetEnabled = false.obs;
+  var imagePath = ''.obs;
+  var base64Image = ''.obs;
+  var isLoading = false.obs;
+
+  // Tweet fetch
+  var tweets = <Tweet>[].obs;
+  var threadTweetList = <TweetContent>[].obs;
+
+  // Like & ownership
   var likedTweetIds = <String>{}.obs;
+  var isPinned = false.obs;
+  var isOwner = false.obs;
+  var tweetOwnerId = ''.obs;
 
   @override
   void onInit() {
     super.onInit();
+    tweetController.addListener(updateTweetState);
     fetchLikedTweets();
-    currentUser.value = _auth.currentUser;
+    fetchTweets();
   }
 
+  @override
+  void onClose() {
+    tweetController.dispose();
+    super.onClose();
+  }
+
+  // Tweet input state
+  void updateTweetState() {
+    isTweetEnabled.value =
+        tweetController.text.isNotEmpty || base64Image.value.isNotEmpty;
+  }
+
+  void resetTweet() {
+    tweetController.clear();
+    imagePath.value = '';
+    base64Image.value = '';
+    isTweetEnabled.value = false;
+  }
+
+  // Thread Management (Simplified)
+  void initThreadWithFirstTweet(String content, String? image) {
+    threadTweetList.clear();
+    threadTweetList.add(TweetContent(content: content, image: image));
+  }
+
+  void addEmptyThreadTweet() {
+    threadTweetList.add(TweetContent(content: '', image: null));
+  }
+
+  void updateThreadTweet(int index, {String? content, String? image}) {
+    final current = threadTweetList[index];
+    threadTweetList[index] = TweetContent(
+      content: content ?? current.content,
+      image: image ?? current.image,
+    );
+  }
+
+  void removeThreadTweet(int index) {
+    if (threadTweetList.length > 1) {
+      threadTweetList.removeAt(index);
+    }
+  }
+
+  Future<void> selectImage(XFile image) async {
+    try {
+      isLoading.value = true;
+      final bytes = await File(image.path).readAsBytes();
+      base64Image.value = base64Encode(bytes);
+      imagePath.value = image.path;
+      updateTweetState();
+    } catch (e) {
+      print("Error encoding image: $e");
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<String?> postTweet() async {
+    if (tweetController.text.isEmpty && base64Image.value.isEmpty) return null;
+
+    try {
+      final ref = await _firestore.collection('tweets').add({
+        'userId': _auth.currentUser?.uid ?? 'anonymous',
+        'timestamp': Timestamp.now(),
+        'text': tweetController.text,
+        'image': base64Image.value,
+        'hasImage': base64Image.value.isNotEmpty,
+        'likesCount': 0,
+        'isPinned': false,
+        'isThread': false,
+        'parentTweetId': null,
+      });
+
+      final tweetId = ref.id;
+      await ref.update({'tweetId': tweetId});
+
+      resetTweet();
+      Get.back();
+      return tweetId;
+    } catch (e) {
+      print("Error posting tweet: $e");
+      return null;
+    }
+  }
+
+  // Fetch Tweets
+  void fetchTweets() {
+    _firestore
+        .collection('tweets')
+        .where('parentTweetId', isNull: true)
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .listen((snapshot) {
+          tweets.value =
+              snapshot.docs.map((doc) => Tweet.fromFirestore(doc)).toList();
+        });
+  }
+
+  // Like
   Future<void> fetchLikedTweets() async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return;
 
-    final snapshot = await _firestore
-        .collection('liked_tweets')
-        .where('userId', isEqualTo: userId)
-        .get();
+    final snapshot =
+        await _firestore
+            .collection('liked_tweets')
+            .where('userId', isEqualTo: userId)
+            .get();
 
-    likedTweetIds.value = snapshot.docs.map((doc) => doc['tweetId'] as String).toSet();
+    likedTweetIds.value =
+        snapshot.docs.map((doc) => doc['tweetId'] as String).toSet();
   }
 
   bool isLiked(String tweetId) {
@@ -44,12 +165,10 @@ class TweetController extends GetxController {
     final likeDoc = await likeDocRef.get();
 
     if (likeDoc.exists) {
-      // UNLIKE
       await likeDocRef.delete();
       await tweetRef.update({'likesCount': FieldValue.increment(-1)});
       likedTweetIds.remove(tweetId);
     } else {
-      // LIKE
       await likeDocRef.set({
         'userId': userId,
         'tweetId': tweetId,
@@ -62,11 +181,11 @@ class TweetController extends GetxController {
     likedTweetIds.refresh();
   }
 
+  // Pinning
   Future<void> pinTweet(String tweetId) async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    final tweetsRef = FirebaseFirestore.instance.collection('tweets');
+    final userId = _auth.currentUser?.uid;
+    final tweetsRef = _firestore.collection('tweets');
 
-    // Unpin tweet lain dari user
     final userTweets = await tweetsRef.where('userId', isEqualTo: userId).get();
     for (var doc in userTweets.docs) {
       if (doc['isPinned'] == true && doc.id != tweetId) {
@@ -76,45 +195,141 @@ class TweetController extends GetxController {
     await tweetsRef.doc(tweetId).update({'isPinned': true});
   }
 
-  Future<List<Tweet>> fetchUserTweets(String userId) async {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('tweets')
-        .where('userId', isEqualTo: userId)
-        .orderBy('timestamp', descending: true)
-        .get();
+  Future<void> togglePin(String tweetId, bool currentState) async {
+    final userId = _auth.currentUser?.uid;
+    final tweetsRef = _firestore.collection('tweets');
 
-    final allTweets = snapshot.docs.map((doc) => Tweet.fromFirestore(doc)).toList();
-
-    Tweet? pinned;
-    List<Tweet> others = [];
-
-    for (var tweet in allTweets) {
-      if (tweet.isPinned == true) {
-        pinned = tweet;
-      } else {
-        others.add(tweet);
+    final userTweets = await tweetsRef.where('userId', isEqualTo: userId).get();
+    for (var doc in userTweets.docs) {
+      if (doc['isPinned'] == true && doc.id != tweetId) {
+        await doc.reference.update({'isPinned': false});
       }
     }
 
-    if (pinned != null) {
-      return [pinned, ...others];
-    }
-    return others;
+    await tweetsRef.doc(tweetId).update({'isPinned': !currentState});
+    isPinned.value = !currentState;
   }
 
+  // Ownership check
+  Future<void> loadTweetOwnership(String tweetId) async {
+    final doc = await _firestore.collection('tweets').doc(tweetId).get();
+    if (doc.exists) {
+      final data = doc.data();
+      final currentUserId = _auth.currentUser?.uid;
 
+      tweetOwnerId.value = data?['userId'] ?? '';
+      isPinned.value = data?['isPinned'] ?? false;
+      isOwner.value = tweetOwnerId.value == currentUserId;
+    }
+  }
 
-//   Future<void> updateAllHasImageField() async {
-//   final tweetsSnapshot = await _firestore.collection('tweets').get();
+  // Delete tweet
+  Future<void> deleteTweet(String tweetId, {bool isThreadRoot = false}) async {
+    try {
+      final batch = _firestore.batch();
 
-//   for (var doc in tweetsSnapshot.docs) {
-//     final data = doc.data();
-//     final hasImage = (data['image'] as String?)?.isNotEmpty ?? false;
+      if (isThreadRoot) {
+        // Hapus semua tweet dalam thread
+        final snapshot =
+            await _firestore
+                .collection('tweets')
+                .where('threadRootId', isEqualTo: tweetId)
+                .get();
 
-//     await doc.reference.update({'hasImage': hasImage});
-//   }
+        for (var doc in snapshot.docs) {
+          batch.delete(doc.reference);
+        }
 
-//   print("Field 'hasImage' updated untuk semua tweet");
-// }
+        // Juga hapus tweet utamanya sendiri
+        final mainDocRef = _firestore.collection('tweets').doc(tweetId);
+        batch.delete(mainDocRef);
+      } else {
+        // Hapus tweet tunggal
+        final tweetRef = _firestore.collection('tweets').doc(tweetId);
+        batch.delete(tweetRef);
+      }
 
+      await batch.commit();
+
+      Get.snackbar(
+        'Success',
+        isThreadRoot ? 'Thread deleted' : 'Tweet deleted',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to delete tweet',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  // Post thread tweet
+  Future<void> postThreadTweetsFromList() async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null || threadTweetList.isEmpty) return;
+
+    final now = DateTime.now();
+
+    try {
+      final main = threadTweetList[0];
+      final mainDocRef = await _firestore.collection('tweets').add({
+        'userId': userId,
+        'text': main.content,
+        'image': main.image,
+        'timestamp': Timestamp.fromDate(now),
+        'likesCount': 0,
+        'hasImage': main.image != null && main.image!.isNotEmpty,
+        'isPinned': false,
+        'isThread': true,
+        'parentTweetId': null,
+        'threadRootId': null,
+      });
+
+      final parentId = mainDocRef.id;
+
+      await mainDocRef.update({'tweetId': parentId, 'threadRootId': parentId});
+
+      for (int i = 1; i < threadTweetList.length; i++) {
+        final reply = threadTweetList[i];
+        await _firestore.collection('tweets').add({
+          'userId': userId,
+          'text': reply.content,
+          'image': reply.image,
+          'timestamp': Timestamp.fromDate(DateTime.now()),
+          'likesCount': 0,
+          'hasImage': reply.image != null && reply.image!.isNotEmpty,
+          'isPinned': false,
+          'isThread': true,
+          'parentTweetId': parentId,
+          'threadRootId': parentId,
+        });
+      }
+
+      threadTweetList.clear();
+      fetchTweets();
+      Get.back();
+
+      Get.snackbar(
+        'Thread Posted',
+        'Your thread has been posted successfully!',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to post thread tweet',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
 }

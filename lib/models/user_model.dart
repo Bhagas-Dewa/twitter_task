@@ -3,12 +3,14 @@ class AppUser {
   final String name;
   final String username;
   final String profilePicture;
+  final String profileBanner;
 
   AppUser({
     required this.uid,
     required this.name,
     required this.username,
     required this.profilePicture,
+    required this.profileBanner,
   });
 
   factory AppUser.fromMap(Map<String, dynamic> map) {
@@ -17,6 +19,7 @@ class AppUser {
       name: map['name'],
       username: map['username'],
       profilePicture: map['profilePicture'],
+      profileBanner: map['profilrBanner'] ?? '',
     );
   }
 
@@ -26,6 +29,7 @@ class AppUser {
       'name': name,
       'username': username,
       'profilePicture': profilePicture,
+      'profileBanner': profileBanner,
     };
   }
 }

@@ -5,6 +5,7 @@ import 'package:twitter_task/controller/tweet_controller.dart';
 import 'package:twitter_task/controller/user_controller.dart';
 import 'package:twitter_task/models/tweet_model.dart';
 import 'package:twitter_task/widgets/bottomsheet_optiontweet.dart';
+import 'package:twitter_task/widgets/thread_page.dart';
 
 class TweetItem extends StatelessWidget {
   final Tweet tweet;
@@ -25,7 +26,6 @@ class TweetItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar
           Padding(
             padding: const EdgeInsets.only(top: 15),
             child: FutureBuilder(
@@ -42,7 +42,9 @@ class TweetItem extends StatelessWidget {
                 final imageProvider =
                     (user.profilePicture.isNotEmpty)
                         ? MemoryImage(base64Decode(user.profilePicture))
-                        : const AssetImage('assets/images/photoprofile_dummy.png')
+                        : const AssetImage(
+                              'assets/images/photoprofile_dummy.png',
+                            )
                             as ImageProvider;
 
                 return CircleAvatar(backgroundImage: imageProvider, radius: 22);
@@ -70,7 +72,7 @@ class TweetItem extends StatelessWidget {
                               Text(
                                 "Loading...",
                                 style: TextStyle(
-                                  fontFamily: 'Helveticalneue',
+                                  fontFamily: 'Helveticaneue',
                                   fontSize: 16,
                                   color: Colors.grey,
                                 ),
@@ -131,13 +133,12 @@ class TweetItem extends StatelessWidget {
                   ],
                 ),
 
-                // Tweet text
                 Transform.translate(
                   offset: Offset(0, -12),
                   child: _highlightHashtags(tweet.content),
                 ),
 
-                // Tweet image (jika ada)
+                // Tweet image
                 if (tweet.image != null && tweet.image!.isNotEmpty) ...[
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
@@ -160,9 +161,29 @@ class TweetItem extends StatelessWidget {
                   ),
                 ],
 
+                SizedBox(height: 5),
+
+                if (tweet.isThread)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: GestureDetector(
+                      onTap: () {
+                        Get.to(() => ThreadPage(tweet: tweet));
+                      },
+                      child: Text(
+                        "Show this thread",
+                        style: TextStyle(
+                          fontFamily: 'Helveticalneue',
+                          fontSize: 14,
+                          color: Color(0xff4C9EEB),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+
                 SizedBox(height: 8),
 
-                // Tweet action icons
                 Padding(
                   padding: const EdgeInsets.only(right: 60),
                   child: Row(
@@ -171,7 +192,6 @@ class TweetItem extends StatelessWidget {
                       _tweetIcon('assets/images/tweet_comment.png', '7'),
                       _tweetIcon('assets/images/tweet_retweet.png', '1'),
 
-                      // Like button
                       GestureDetector(
                         onTap: () {
                           tweetController.toggleLike(

@@ -64,6 +64,39 @@ class EditProfilePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              GestureDetector(
+                onTap: profileController.pickBannerImage,
+                child: Obx(() {
+                  final bannerBase64 = profileController.base64Banner.value;
+                  return Container(
+                    width: double.infinity,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE7ECF0),
+                      image:
+                          bannerBase64.isNotEmpty
+                              ? DecorationImage(
+                                image: MemoryImage(base64Decode(bannerBase64)),
+                                fit: BoxFit.cover,
+                              )
+                              : null,
+                    ),
+                    child:
+                        bannerBase64.isEmpty
+                            ? Center(
+                              child: Image.asset(
+                                'assets/images/bottomicon_camera.png',
+                                width: 50,
+                                height: 50,
+                                color: Color(0xff4C9EEB),
+                              ),
+                            )
+                            : null,
+                  );
+                }),
+              ),
+
+              const SizedBox(height: 20),
               Center(
                 child: GestureDetector(
                   onTap: profileController.pickImage,

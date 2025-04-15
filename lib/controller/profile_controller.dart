@@ -6,17 +6,19 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:twitter_task/controller/user_controller.dart';
 
-
-class ProfileController extends GetxController with GetSingleTickerProviderStateMixin {
+class ProfileController extends GetxController
+    with GetSingleTickerProviderStateMixin {
   late TabController tabController;
+
   final tabs = ['Tweets', 'Replies', 'Media', 'Likes'];
-
   final userController = Get.find<UserController>();
-
   final nameController = TextEditingController();
   final usernameController = TextEditingController();
+
   RxString base64Image = ''.obs;
+  RxString base64Banner = ''.obs;
   File? selectedImage;
+  File? selectedBanner;
 
   @override
   void onInit() {
@@ -26,6 +28,7 @@ class ProfileController extends GetxController with GetSingleTickerProviderState
       nameController.text = user.name;
       usernameController.text = user.username;
       base64Image.value = user.profilePicture.toString();
+      base64Banner.value = user.profileBanner.toString();
     }
 
     super.onInit();
@@ -39,7 +42,7 @@ class ProfileController extends GetxController with GetSingleTickerProviderState
 
       final compressedBytes = await FlutterImageCompress.compressWithFile(
         file.absolute.path,
-        quality: 60, 
+        quality: 60,
         format: CompressFormat.jpeg,
       );
 
@@ -47,6 +50,24 @@ class ProfileController extends GetxController with GetSingleTickerProviderState
         base64Image.value = base64Encode(compressedBytes);
       } else {
         Get.snackbar('Error', 'Gagal kompres gambar');
+      }
+    }
+  }
+
+  Future<void> pickBannerImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      final file = File(picked.path);
+      final compressedBytes = await FlutterImageCompress.compressWithFile(
+        file.absolute.path,
+        quality: 60,
+        format: CompressFormat.jpeg,
+      );
+      if (compressedBytes != null) {
+        base64Banner.value = base64Encode(compressedBytes);
+      } else {
+        Get.snackbar('Error', 'Gagal kompres banner');
       }
     }
   }
@@ -61,11 +82,11 @@ class ProfileController extends GetxController with GetSingleTickerProviderState
 
     final validUsername = username.startsWith('@') ? username : '@$username';
 
-
     await userController.updateUser(
       name: name,
       username: username,
       newBase64Image: base64Image.value,
+      newBase64Banner: base64Banner.value,
     );
 
     await userController.fetchUserData();
@@ -73,6 +94,7 @@ class ProfileController extends GetxController with GetSingleTickerProviderState
     Get.back();
     Get.snackbar('Success', 'Profile updated');
   }
+  
 
   @override
   void onClose() {

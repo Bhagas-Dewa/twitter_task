@@ -35,15 +35,21 @@ class UserController extends GetxController {
 
     final name = firebaseUser.displayName ?? 'user';
     final generatedUsername = '@${name.toLowerCase().replaceAll(' ', '')}';
+    final defaultProfile = await getDefaultProfileBase64();
+    final defaultBanner = await getDefaultBannerBase64();
 
     final user = AppUser(
       uid: firebaseUser.uid,
       name: name,
       username: generatedUsername,
-      profilePicture: '', 
+      profilePicture: defaultProfile,
+      profileBanner: defaultBanner,
     );
 
-    await _firestore.collection('users').doc(firebaseUser.uid).set(user.toMap());
+    await _firestore
+        .collection('users')
+        .doc(firebaseUser.uid)
+        .set(user.toMap());
     currentUser.value = user;
   }
 
@@ -51,6 +57,7 @@ class UserController extends GetxController {
     required String name,
     required String username,
     String? newBase64Image,
+    String? newBase64Banner,
   }) async {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return;
@@ -59,6 +66,7 @@ class UserController extends GetxController {
       'name': name,
       'username': username,
       if (newBase64Image != null) 'profilePicture': newBase64Image,
+      if (newBase64Banner != null) 'profileBanner': newBase64Banner,
     };
 
     await _firestore.collection('users').doc(uid).update(updatedData);
@@ -68,11 +76,18 @@ class UserController extends GetxController {
       name: name,
       username: currentUser.value?.username ?? '',
       profilePicture: newBase64Image ?? currentUser.value?.profilePicture ?? '',
+      profileBanner: newBase64Banner ?? currentUser.value?.profileBanner ?? '',
     );
   }
 
   Future<String> getDefaultProfileBase64() async {
     final byteData = await rootBundle.load('assets/images/default_profile.png');
+    final bytes = byteData.buffer.asUint8List();
+    return base64Encode(bytes);
+  }
+
+  Future<String> getDefaultBannerBase64() async {
+    final byteData = await rootBundle.load('assets/images/profile_banner.png');
     final bytes = byteData.buffer.asUint8List();
     return base64Encode(bytes);
   }
@@ -100,6 +115,4 @@ class UserController extends GetxController {
 
     return null;
   }
-
-
 }

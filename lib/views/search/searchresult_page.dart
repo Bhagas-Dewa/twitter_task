@@ -14,7 +14,9 @@ class SearchResultPage extends StatelessWidget {
     final SearchScreenController controller = Get.put(SearchScreenController());
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: Text("Results for \"$searchQuery\""),
       ),
       body: FutureBuilder<List<Tweet>>(

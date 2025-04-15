@@ -28,15 +28,26 @@ class ProfilePage extends StatelessWidget {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                Container(
-                  height: bannerHeight,
-                  decoration: const BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage('assets/images/profile_banner.png'),
-                      fit: BoxFit.cover,
+                //BANNER HEADER
+                Obx(() {
+                  final bannerBase64 = controller.base64Banner.value;
+                  final bannerImage =
+                      bannerBase64.isNotEmpty
+                          ? MemoryImage(base64Decode(bannerBase64))
+                          : const AssetImage('assets/images/profile_banner.png')
+                              as ImageProvider;
+
+                  return Container(
+                    height: bannerHeight,
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: bannerImage,
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                }),
+
                 SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.only(left: 20, top: 8),
@@ -57,11 +68,16 @@ class ProfilePage extends StatelessWidget {
                   child: Row(
                     children: [
                       Obx(() {
-                        final user = controller.userController.currentUser.value;
+                        final user =
+                            controller.userController.currentUser.value;
                         final base64Image = user?.profilePicture ?? '';
-                        final imageProvider = (base64Image.isNotEmpty)
-                            ? MemoryImage(base64Decode(base64Image))
-                            : const AssetImage('assets/images/photoprofile_dummy.png') as ImageProvider;
+                        final imageProvider =
+                            (base64Image.isNotEmpty)
+                                ? MemoryImage(base64Decode(base64Image))
+                                : const AssetImage(
+                                      'assets/images/photoprofile_dummy.png',
+                                    )
+                                    as ImageProvider;
 
                         return Container(
                           width: avatarRadius * 2,
@@ -86,7 +102,9 @@ class ProfilePage extends StatelessWidget {
                             },
                             child: Container(
                               height: 32,
-                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(20),
@@ -119,9 +137,7 @@ class ProfilePage extends StatelessWidget {
           ProfileUserInformation(),
 
           // Tabbar + tabview scrollable
-          Expanded(
-            child: ProfileTabSection(controller: controller),
-          ),
+          Expanded(child: ProfileTabSection(controller: controller)),
         ],
       ),
       floatingActionButton: FloatingActionButton(

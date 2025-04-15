@@ -20,14 +20,15 @@ class MessageController extends GetxController {
   void setQualityFilter(bool value) => qualityFilter.value = value;
   void setReadReceipts(bool value) => readReceipts.value = value;
 
-  /// Generate consistent chatId for 1-on-1 chats
   String _generateChatId(String uid1, String uid2) {
     final sorted = [uid1, uid2]..sort();
     return sorted.join('_');
   }
 
-  /// Get or create a chat room between two users
-  Future<String> getOrCreateChatRoom(String currentUserId, String otherUserId) async {
+  Future<String> getOrCreateChatRoom(
+    String currentUserId,
+    String otherUserId,
+  ) async {
     final sorted = [currentUserId, otherUserId]..sort();
     final chatId = sorted.join('_');
 
@@ -48,7 +49,6 @@ class MessageController extends GetxController {
     return chatId;
   }
 
-  /// Handle chat room setup from RoomChatPage
   Future<void> prepareChatRoom(String otherUserId) async {
     final currentUser = _userController.currentUser.value;
     if (currentUser == null || otherUserId.isEmpty) {
@@ -58,11 +58,11 @@ class MessageController extends GetxController {
 
     final currentUserId = currentUser.uid;
 
-    // Ambil atau buat chat room
+    // buat chat room
     final id = await getOrCreateChatRoom(currentUserId, otherUserId);
     chatId.value = id;
 
-    // Ambil user lawan bicara
+    // Ambil user lawan
     final user = await _userController.getUserById(otherUserId);
     if (user == null) {
       print('Failed to fetch user for ID: $otherUserId');
@@ -70,15 +70,15 @@ class MessageController extends GetxController {
     chattingWith.value = user;
   }
 
-
   /// Send message to specific chat
   Future<void> sendMessage(String chatId, MessageModel message) async {
-    final messagesRef =
-        _firestore.collection('chats').doc(chatId).collection('messages');
+    final messagesRef = _firestore
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages');
 
     await messagesRef.add(message.toMap());
 
-    // Update lastMessage and lastTimestamp in chat room
     await _firestore.collection('chats').doc(chatId).update({
       'lastMessage': message.text,
       'lastSenderId': message.senderId,
@@ -94,13 +94,16 @@ class MessageController extends GetxController {
         .collection('messages')
         .orderBy('timestamp', descending: false)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => MessageModel.fromMap(doc.data()))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map((doc) => MessageModel.fromMap(doc.data()))
+                  .toList(),
+        );
   }
 
   /// Ambil semua user kecuali user saat ini
-Future<List<AppUser>> fetchAllUsersExceptCurrent() async {
+  Future<List<AppUser>> fetchAllUsersExceptCurrent() async {
     final currentUserId = _userController.currentUser.value?.uid;
     if (currentUserId == null) return [];
 
@@ -110,24 +113,22 @@ Future<List<AppUser>> fetchAllUsersExceptCurrent() async {
         .map((doc) => AppUser.fromMap(doc.data()))
         .where((user) => user.uid != currentUserId)
         .toList();
-}
+  }
 
-Future<AppUser?> fetchUserById(String uid) async {
-  return await _userController.getUserById(uid);
-}
+  Future<AppUser?> fetchUserById(String uid) async {
+    return await _userController.getUserById(uid);
+  }
 
-final userCache = <String, AppUser>{}.obs;
+  final userCache = <String, AppUser>{}.obs;
 
-Future<void> preloadUsers(List<String> userIds) async {
-  for (var id in userIds) {
-    if (!userCache.containsKey(id)) {
-      final user = await fetchUserById(id);
-      if (user != null) {
-        userCache[id] = user;
+  Future<void> preloadUsers(List<String> userIds) async {
+    for (var id in userIds) {
+      if (!userCache.containsKey(id)) {
+        final user = await fetchUserById(id);
+        if (user != null) {
+          userCache[id] = user;
+        }
       }
     }
   }
-}
-
-
 }
