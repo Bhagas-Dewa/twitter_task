@@ -5,13 +5,15 @@ import 'package:twitter_task/controller/tweet_controller.dart';
 import 'package:twitter_task/controller/user_controller.dart';
 import 'package:twitter_task/models/tweet_model.dart';
 import 'package:twitter_task/widgets/bottomsheet_optiontweet.dart';
-import 'package:twitter_task/widgets/thread_page.dart';
+import 'package:twitter_task/views/home/thread/thread_page.dart';
 
 class TweetItem extends StatelessWidget {
   final Tweet tweet;
+  final bool isInThreadPage;
   final TweetController tweetController = Get.put(TweetController());
 
-  TweetItem({Key? key, required this.tweet}) : super(key: key);
+  TweetItem({Key? key, required this.tweet, this.isInThreadPage = false})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -26,30 +28,37 @@ class TweetItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 15),
-            child: FutureBuilder(
-              future: Get.find<UserController>().getUserById(tweet.userId),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return CircleAvatar(
-                    radius: 22,
-                    backgroundColor: Colors.grey[300],
-                  );
-                }
+          Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 15),
+                child: FutureBuilder(
+                  future: Get.find<UserController>().getUserById(tweet.userId),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return CircleAvatar(
+                        radius: 22,
+                        backgroundColor: Colors.grey[300],
+                      );
+                    }
 
-                final user = snapshot.data!;
-                final imageProvider =
-                    (user.profilePicture.isNotEmpty)
-                        ? MemoryImage(base64Decode(user.profilePicture))
-                        : const AssetImage(
-                              'assets/images/photoprofile_dummy.png',
-                            )
-                            as ImageProvider;
+                    final user = snapshot.data!;
+                    final imageProvider =
+                        (user.profilePicture.isNotEmpty)
+                            ? MemoryImage(base64Decode(user.profilePicture))
+                            : const AssetImage(
+                                  'assets/images/photoprofile_dummy.png',
+                                )
+                                as ImageProvider;
 
-                return CircleAvatar(backgroundImage: imageProvider, radius: 22);
-              },
-            ),
+                    return CircleAvatar(
+                      backgroundImage: imageProvider,
+                      radius: 22,
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
           SizedBox(width: 10),
 
@@ -161,11 +170,9 @@ class TweetItem extends StatelessWidget {
                   ),
                 ],
 
-                SizedBox(height: 5),
-
-                if (tweet.isThread)
+                if (tweet.isThread && !isInThreadPage)
                   Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
+                    padding: const EdgeInsets.only(top: 5),
                     child: GestureDetector(
                       onTap: () {
                         Get.to(() => ThreadPage(tweet: tweet));
@@ -174,9 +181,9 @@ class TweetItem extends StatelessWidget {
                         "Show this thread",
                         style: TextStyle(
                           fontFamily: 'Helveticalneue',
-                          fontSize: 14,
+                          fontSize: 16,
                           color: Color(0xff4C9EEB),
-                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.3,
                         ),
                       ),
                     ),

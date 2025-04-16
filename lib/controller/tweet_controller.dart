@@ -108,6 +108,7 @@ class TweetController extends GetxController {
         'isPinned': false,
         'isThread': false,
         'parentTweetId': null,
+        'threadRootId': null,
       });
 
       final tweetId = ref.id;
@@ -177,7 +178,6 @@ class TweetController extends GetxController {
       await tweetRef.update({'likesCount': FieldValue.increment(1)});
       likedTweetIds.add(tweetId);
     }
-
     likedTweetIds.refresh();
   }
 
@@ -274,41 +274,51 @@ class TweetController extends GetxController {
     final userId = _auth.currentUser?.uid;
     if (userId == null || threadTweetList.isEmpty) return;
 
-    final now = DateTime.now();
-
     try {
       final main = threadTweetList[0];
+      if (main.isEmpty) return; 
+
       final mainDocRef = await _firestore.collection('tweets').add({
         'userId': userId,
         'text': main.content,
-        'image': main.image,
-        'timestamp': Timestamp.fromDate(now),
+        'image': main.image ?? '',
+        'timestamp': Timestamp.now(),
         'likesCount': 0,
         'hasImage': main.image != null && main.image!.isNotEmpty,
         'isPinned': false,
-        'isThread': true,
+        'isThread': threadTweetList.length > 1,
         'parentTweetId': null,
-        'threadRootId': null,
+        'threadRootId': null, 
+        'tweetId': '',
       });
 
-      final parentId = mainDocRef.id;
+      final rootId = mainDocRef.id;
 
-      await mainDocRef.update({'tweetId': parentId, 'threadRootId': parentId});
+      await mainDocRef.update({'tweetId': rootId, 'threadRootId': rootId});
 
+      // Buat replies (tweets lain dalam thread)
+      String lastParentId = rootId;
       for (int i = 1; i < threadTweetList.length; i++) {
         final reply = threadTweetList[i];
-        await _firestore.collection('tweets').add({
+        if (reply.isEmpty) continue;
+
+        final replyDocRef = await _firestore.collection('tweets').add({
           'userId': userId,
           'text': reply.content,
-          'image': reply.image,
-          'timestamp': Timestamp.fromDate(DateTime.now()),
+          'image': reply.image ?? '',
+          'timestamp': Timestamp.now(),
           'likesCount': 0,
           'hasImage': reply.image != null && reply.image!.isNotEmpty,
           'isPinned': false,
           'isThread': true,
-          'parentTweetId': parentId,
-          'threadRootId': parentId,
+          'parentTweetId': lastParentId, 
+          'threadRootId': rootId, 
         });
+
+        final replyId = replyDocRef.id;
+        await replyDocRef.update({'tweetId': replyId});
+
+        lastParentId = replyId; 
       }
 
       threadTweetList.clear();
@@ -325,7 +335,7 @@ class TweetController extends GetxController {
     } catch (e) {
       Get.snackbar(
         'Error',
-        'Failed to post thread tweet',
+        'Failed to post thread: ${e.toString()}',
         backgroundColor: Colors.red,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
