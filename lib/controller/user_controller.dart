@@ -81,13 +81,13 @@ class UserController extends GetxController {
   }
 
   Future<String> getDefaultProfileBase64() async {
-    final byteData = await rootBundle.load('assets/images/default_profile.png');
+    final byteData = await rootBundle.load('assets/images/photoprofile_dummy.png');
     final bytes = byteData.buffer.asUint8List();
     return base64Encode(bytes);
   }
 
   Future<String> getDefaultBannerBase64() async {
-    final byteData = await rootBundle.load('assets/images/profile_banner.png');
+    final byteData = await rootBundle.load('assets/images/banner_dummy.png');
     final bytes = byteData.buffer.asUint8List();
     return base64Encode(bytes);
   }

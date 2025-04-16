@@ -5,6 +5,7 @@ import 'package:twitter_task/controller/tweet_controller.dart';
 import 'package:twitter_task/controller/user_controller.dart';
 import 'package:twitter_task/models/tweet_model.dart';
 import 'package:twitter_task/views/home/thread/thread_utils.dart';
+import 'package:twitter_task/widgets/bottomsheet_optiontweet.dart';
 
 class ThreadReplyItem extends StatelessWidget {
   final Tweet reply;
@@ -32,7 +33,7 @@ class ThreadReplyItem extends StatelessWidget {
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return CircleAvatar(
-                      radius: 20,
+                      radius: 18,
                       backgroundColor: Colors.grey[300],
                     );
                   }
@@ -57,7 +58,9 @@ class ThreadReplyItem extends StatelessWidget {
                 width: 2,
                 height: 30,
                 color: Colors.grey[300],
-                margin: const EdgeInsets.symmetric(vertical: 4),
+                margin: const EdgeInsets.symmetric(
+                  vertical: 10,
+                ), // padding line
               ),
             ],
           ),
@@ -83,6 +86,8 @@ class ThreadReplyItem extends StatelessWidget {
 
                     final user = snapshot.data!;
                     return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
                           user.name,
@@ -116,6 +121,20 @@ class ThreadReplyItem extends StatelessWidget {
                             letterSpacing: -0.3,
                           ),
                         ),
+                        // Spacer(),
+                        // IconButton(
+                        //   icon: Image.asset(
+                        //     'assets/images/tweet_downarrow.png',
+                        //     height: 8,
+                        //     width: 10,
+                        //   ),
+                        //   onPressed: () {
+                        //     _showBottomSheetOptions(context);
+                        //   },
+                        //   padding: EdgeInsets.zero,
+                        //   constraints: BoxConstraints(),
+                        // ),
+                        
                       ],
                     );
                   },
@@ -156,7 +175,7 @@ class ThreadReplyItem extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       _buildAction('assets/images/tweet_comment.png', ''),
-                      SizedBox(width: 50), 
+                      SizedBox(width: 50),
                       _buildAction('assets/images/tweet_retweet.png', ''),
                       SizedBox(width: 50),
                       _buildAction(
@@ -208,16 +227,20 @@ class ThreadReplyItem extends StatelessWidget {
         }),
       );
     }
-    
+
     return Row(
       children: [
-        Image.asset(
-          iconPath, 
-          width: 14, 
-          height: 14,
-          color: Color(0xff687684),
-        ),
+        Image.asset(iconPath, width: 14, height: 14, color: Color(0xff687684)),
       ],
+    );
+  }
+
+  void _showBottomSheetOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => BottomSheetOptionTweet(tweetId: reply.id),
     );
   }
 }

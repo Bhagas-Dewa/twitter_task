@@ -34,7 +34,7 @@ class ProfilePage extends StatelessWidget {
                   final bannerImage =
                       bannerBase64.isNotEmpty
                           ? MemoryImage(base64Decode(bannerBase64))
-                          : const AssetImage('assets/images/profile_banner.png')
+                          : const AssetImage('assets/images/banner_dummy.png')
                               as ImageProvider;
 
                   return Container(
