@@ -4,8 +4,10 @@ import 'package:get/get.dart';
 import 'package:twitter_task/controller/tweet_controller.dart';
 import 'package:twitter_task/controller/user_controller.dart';
 import 'package:twitter_task/models/tweet_model.dart';
+import 'package:twitter_task/views/home/thread/thread_utils.dart';
 import 'package:twitter_task/widgets/bottomsheet_optiontweet.dart';
 import 'package:twitter_task/views/home/thread/thread_page.dart';
+import 'package:twitter_task/widgets/bottomsheet_retweet.dart';
 
 class TweetItem extends StatelessWidget {
   final Tweet tweet;
@@ -120,7 +122,7 @@ class TweetItem extends StatelessWidget {
 
                     SizedBox(width: 8),
                     Text(
-                      "·14h",
+                      "· ${getTimeAgo(tweet.timestamp)}",
                       style: TextStyle(
                         fontFamily: 'Helveticalneue',
                         fontSize: 16,
@@ -197,7 +199,15 @@ class TweetItem extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _tweetIcon('assets/images/tweet_comment.png', '7'),
-                      _tweetIcon('assets/images/tweet_retweet.png', '1'),
+                      GestureDetector(
+                        onTap: () {
+                          showRetweetBottomSheet();
+                        },
+                        child: _tweetIcon(
+                          'assets/images/tweet_retweet.png',
+                          '1',
+                        ),
+                      ),
 
                       GestureDetector(
                         onTap: () {
@@ -320,6 +330,14 @@ class TweetItem extends StatelessWidget {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => BottomSheetOptionTweet(tweetId: tweet.id),
+    );
+  }
+
+  void showRetweetBottomSheet() {
+    Get.bottomSheet(
+      BottomSheetRetweet(tweet: tweet),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
     );
   }
 }

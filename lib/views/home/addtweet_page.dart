@@ -26,7 +26,7 @@ class AddTweetPage extends StatelessWidget {
           Expanded(
             child: Obx(
               () => ListView.builder(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 itemCount: controller.threadTweetList.length,
                 itemBuilder: (context, index) {
                   return _buildTweetInput(index);

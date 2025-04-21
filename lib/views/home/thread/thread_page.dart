@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:twitter_task/controller/tweet_controller.dart';
 import 'package:twitter_task/models/tweet_model.dart';
 import 'package:twitter_task/views/home/thread/thread_headline.dart';
 import 'package:twitter_task/views/home/thread/thread_reply_item.dart';
@@ -8,18 +9,25 @@ import 'package:twitter_task/views/home/thread/thread_reply_item.dart';
 class ThreadPage extends StatelessWidget {
   final Tweet tweet;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final TweetController tweetController = Get.find<TweetController>();
 
-  ThreadPage({Key? key, required this.tweet}) : super(key: key);
+  ThreadPage({Key? key, required this.tweet}) : super(key: key) {
+    tweetController.changeThreadHeadline(
+      tweet.threadRootId ?? tweet.id,
+      tweet.threadRootId ?? tweet.id,
+    );
+  }
 
-  Future<List<Tweet>> fetchReplies(String threadRootId) async {
-    final snapshot =
-        await _firestore
-            .collection('tweets')
-            .where('threadRootId', isEqualTo: threadRootId)
-            .orderBy('timestamp')
-            .get();
-
-    return snapshot.docs.map((doc) => Tweet.fromFirestore(doc)).toList();
+  Stream<List<Tweet>> getRepliesStream(String threadRootId) {
+    return _firestore
+        .collection('tweets')
+        .where('threadRootId', isEqualTo: threadRootId)
+        .orderBy('timestamp')
+        .snapshots()
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => Tweet.fromFirestore(doc)).toList(),
+        );
   }
 
   @override
@@ -36,10 +44,7 @@ class ThreadPage extends StatelessWidget {
             alignment: Alignment.bottomCenter,
             decoration: const BoxDecoration(
               border: Border(
-                bottom: BorderSide(
-                  color: Color(0xFFBDC5CD),
-                  width: 0.33,
-                ),
+                bottom: BorderSide(color: Color(0xFFBDC5CD), width: 0.33),
               ),
             ),
             child: Row(
@@ -65,91 +70,127 @@ class ThreadPage extends StatelessWidget {
                     letterSpacing: -0.3,
                   ),
                 ),
-                const SizedBox(width: 48), 
+                const SizedBox(width: 48),
               ],
             ),
           ),
         ),
       ),
 
-      body: FutureBuilder<List<Tweet>>(
-        future: fetchReplies(tweet.threadRootId ?? tweet.id),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
+      body: Obx(() {
+        final refreshKey = Key(
+          'thread_refresh_${tweetController.refreshTrigger.value}',
+        );
 
-          // if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          //   // Jika tidak ada replies, tetap tampilkan tweet utama
-          //   return ListView(
-          //     children: [
-          //       ThreadHeadline(tweet: tweet),
-          //       // _buildReplyField(),
-          //     ],
-          //   );
-          // }
+        return StreamBuilder<List<Tweet>>(
+          key: refreshKey, // Key ini memaksa rebuild widget saat berubah
+          stream: getRepliesStream(tweetController.currentThreadRootId.value),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            }
 
-          final tweets = snapshot.data!;
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return Center(child: Text('No replies found'));
+            }
 
-          // Pisahkan tweet utama dengan replies
-          final rootTweet = tweets.firstWhere(
-            (t) => t.id == (tweet.threadRootId ?? tweet.id),
-            orElse: () => tweet,
-          );
+            final tweets = snapshot.data!;
 
-          final replies =
-              tweets
-                  .where(
-                    (t) =>
-                        t.id != rootTweet.id &&
-                        t.threadRootId == (tweet.threadRootId ?? tweet.id),
-                  )
-                  .toList();
+            // Tentukan headline
+            final headlineTweet = tweets.firstWhere(
+              (t) => t.id == tweetController.currentHeadlineTweetId.value,
+              orElse: () => tweet,
+            );
 
-          // Urutkan replies berdasarkan timestamp
-          replies.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+            final displayedTweetIds = <String>{headlineTweet.id};
 
-          return ListView(
-            children: [
-              ThreadHeadline(tweet: rootTweet),
+            // Memisah replies untuk menghindari duplikasi
+            final replies =
+                tweets
+                    .where(
+                      (t) =>
+                          t.id != headlineTweet.id &&
+                          t.threadRootId ==
+                              tweetController.currentThreadRootId.value,
+                    )
+                    .toList();
+            
+            replies.forEach((t) => displayedTweetIds.add(t.id));
 
-              // Tweet replies
-              ...replies
-                  .map((replyTweet) => ThreadReplyItem(reply: replyTweet))
-                  .toList(),
+            // Urutkan replies
+            replies.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
-              // _buildReplyField(),
-            ],
-          );
-        },
-      ),
+            final repliesBefore =
+                replies
+                    .where((r) => r.timestamp.isBefore(headlineTweet.timestamp))
+                    .toList();
+
+            final repliesAfter =
+                replies
+                    .where((r) => r.timestamp.isAfter(headlineTweet.timestamp))
+                    .toList();
+
+            return ListView(
+              children: [
+                // Jika headline bukan root tweet, tampilkan root tweet sebagai reply item
+                if (headlineTweet.id != (tweet.threadRootId ?? tweet.id) &&
+                    !repliesBefore.any(
+                      (r) => r.id == (tweet.threadRootId ?? tweet.id),
+                    ))
+                  ThreadReplyItem(
+                    reply: tweets.firstWhere(
+                      (t) => t.id == (tweet.threadRootId ?? tweet.id),
+                      orElse: () => tweets.first,
+                    ),
+                    threadRootId: tweet.threadRootId ?? tweet.id,
+                    onTap: () {
+                      tweetController.changeThreadHeadline(
+                        tweet.threadRootId ?? tweet.id,
+                        tweet.threadRootId ?? tweet.id,
+                      );
+                    },
+                  ),
+
+                // Reply item sebelum headline
+                ...repliesBefore.map(
+                  (replyTweet) => ThreadReplyItem(
+                    key: Key('reply_before_${replyTweet.id}'),
+                    reply: replyTweet,
+                    threadRootId: tweet.threadRootId ?? tweet.id,
+                    onTap: () {
+                      tweetController.changeThreadHeadline(
+                        replyTweet.id,
+                        headlineTweet.threadRootId ?? headlineTweet.id,
+                      );
+                    },
+                  ),
+                ),
+
+                // Headline
+                ThreadHeadline(
+                  key: Key('headline_${headlineTweet.id}'),
+                  tweet: headlineTweet,
+                ),
+
+                // Reply item setelah headline
+                ...repliesAfter.map(
+                  (replyTweet) => ThreadReplyItem(
+                    key: Key('reply_after_${replyTweet.id}'),
+                    reply: replyTweet,
+                    threadRootId: tweet.threadRootId ?? tweet.id,
+                    onTap: () {
+                      tweetController.changeThreadHeadline(
+                        replyTweet.id,
+                        headlineTweet.threadRootId ?? headlineTweet.id,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      }),
     );
   }
-
-  // Widget _buildReplyField() {
-  //   return Container(
-  //     padding: EdgeInsets.all(16),
-  //     decoration: BoxDecoration(
-  //       border: Border(top: BorderSide(color: Colors.grey.shade300)),
-  //     ),
-  //     child: Row(
-  //       children: [
-  //         const CircleAvatar(
-  //           radius: 18,
-  //           backgroundImage: AssetImage('assets/images/photoprofile_dummy.png'),
-  //         ),
-  //         const SizedBox(width: 12),
-  //         Expanded(
-  //           child: TextField(
-  //             decoration: const InputDecoration(
-  //               border: InputBorder.none,
-  //               hintText: "Tweet your reply",
-  //               hintStyle: TextStyle(color: Colors.grey),
-  //             ),
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 }

@@ -128,3 +128,78 @@
 //     super.onClose();
 //   }
 // }
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:get/get.dart';
+import 'package:twitter_task/models/tweet_model.dart';
+import 'package:twitter_task/models/retweet_model.dart';
+
+class HomeController extends GetxController {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Observable list untuk menyimpan feed items
+  var feedItems = <Map<String, dynamic>>[].obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    fetchFeed();
+  }
+
+  Future<void> fetchFeed() async {
+    try {
+      // Ambil tweets tanpa parent (top-level tweets)
+      final tweetsQuery = await _firestore
+          .collection('tweets')
+          .where('parentTweetId', isNull: true)
+          .orderBy('timestamp', descending: true)
+          .get();
+
+      // Ambil retweets
+      final retweetsQuery = await _firestore
+          .collection('retweets')
+          .orderBy('timestamp', descending: true)
+          .get();
+
+      // Konversi tweets
+      final tweets = tweetsQuery.docs.map((doc) => {
+            'type': 'tweet',
+            'data': Tweet.fromFirestore(doc),
+            'timestamp': (doc.data()['timestamp'] as Timestamp).toDate(),
+          }).toList();
+
+      // Konversi retweets
+      final retweets = retweetsQuery.docs.map((doc) => {
+            'type': 'retweet',
+            'data': Retweet.fromFirestore(doc),
+            'timestamp': (doc.data()['timestamp'] as Timestamp).toDate(),
+          }).toList();
+
+      // Gabungkan dan urutkan
+      feedItems.value = [...tweets, ...retweets]
+        ..sort((a, b) => b['timestamp'].compareTo(a['timestamp']));
+    } catch (e) {
+      print('Error fetching feed: $e');
+      feedItems.clear();
+    }
+  }
+
+  // Metode untuk me-refresh feed
+  Future<void> refreshFeed() async {
+    await fetchFeed();
+  }
+
+  // Metode untuk menambahkan filter atau sorting tambahan
+  void sortFeedByNewest() {
+    feedItems.sort((a, b) => b['timestamp'].compareTo(a['timestamp']));
+  }
+
+  // Metode untuk mendapatkan jenis item tertentu
+  List<Map<String, dynamic>> getTweetItems() {
+    return feedItems.where((item) => item['type'] == 'tweet').toList();
+  }
+
+  List<Map<String, dynamic>> getRetweetItems() {
+    return feedItems.where((item) => item['type'] == 'retweet').toList();
+  }
+}

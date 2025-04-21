@@ -7,11 +7,13 @@ import 'package:twitter_task/views/home/addtweet_page.dart';
 import 'package:twitter_task/widgets/appbar_home.dart';
 import 'package:twitter_task/widgets/bottom_navbar.dart';
 import 'package:twitter_task/controller/home_controller.dart';
+import 'package:twitter_task/widgets/retweet_item.dart';
 import 'package:twitter_task/widgets/tweet_item.dart';
 
 class HomePage extends StatelessWidget {
   final AuthController _authController = Get.find<AuthController>();
-  final TweetController homeController = Get.put(TweetController());
+  final TweetController tweetController = Get.find<TweetController>();
+  final HomeController homeController = Get.put(HomeController());
 
   HomePage({Key? key}) : super(key: key);
 
@@ -21,31 +23,45 @@ class HomePage extends StatelessWidget {
       backgroundColor: Colors.white,
       appBar: AppBarHome(),
 
-       body: Obx(() {
-        if (homeController.tweets.isEmpty) {
-          return Center(child: Text("No tweets available"));
+      body: Obx(() {
+        if (homeController.feedItems.isEmpty) {
+          return Center(child: Text("No feed items available"));
         }
-        return ListView.builder(
-          itemCount: homeController.tweets.length,
-          itemBuilder: (context, index) {
-            final tweet = homeController.tweets[index];
-            return TweetItem(tweet: tweet);
-          },
+
+        return RefreshIndicator(
+          onRefresh: homeController.refreshFeed,
+          child: ListView.builder(
+            itemCount: homeController.feedItems.length,
+            itemBuilder: (context, index) {
+              final item = homeController.feedItems[index];
+
+              if (item['type'] == 'tweet') {
+                final tweet = item['data'];
+
+                // Cek apakah tweet adalah thread
+                // Anda bisa menambahkan kondisi untuk thread di sini
+                return TweetItem(tweet: tweet);
+              } else if (item['type'] == 'retweet') {
+                final retweet = item['data'];
+                return RetweetItem(retweet: retweet);
+              }
+
+              return SizedBox.shrink(); // Fallback
+            },
+          ),
         );
       }),
 
-
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          homeController.resetTweet();
-          Get.to(()=> AddTweetPage()
-          );
+          Get.find<TweetController>().resetTweet();
+          Get.to(() => AddTweetPage());
         },
         backgroundColor: Color(0xff4C9EEB),
         shape: CircleBorder(),
         elevation: 2,
         child: Image.asset(
-          'assets/images/floating_addtweet.png', 
+          'assets/images/floating_addtweet.png',
           height: 23,
           width: 21,
         ),
@@ -54,6 +70,4 @@ class HomePage extends StatelessWidget {
       bottomNavigationBar: BottomNavBar(),
     );
   }
-
-
 }

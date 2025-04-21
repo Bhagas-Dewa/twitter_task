@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:twitter_task/models/tweet_model.dart';
 import 'package:twitter_task/models/tweetcontent_model.dart';
+import 'package:twitter_task/widgets/bottomsheet_retweet.dart';
 
 class TweetController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -22,12 +23,17 @@ class TweetController extends GetxController {
   // Tweet fetch
   var tweets = <Tweet>[].obs;
   var threadTweetList = <TweetContent>[].obs;
+  var refreshTrigger = 0.obs;
 
   // Like & ownership
   var likedTweetIds = <String>{}.obs;
   var isPinned = false.obs;
   var isOwner = false.obs;
   var tweetOwnerId = ''.obs;
+
+  // Tweet thread
+  var currentHeadlineTweetId = ''.obs;
+  var currentThreadRootId = ''.obs;
 
   @override
   void onInit() {
@@ -43,6 +49,28 @@ class TweetController extends GetxController {
     super.onClose();
   }
 
+  void forceRefresh() {
+    refreshTrigger.value++;
+  }
+
+  void changeThreadHeadline(String newHeadlineTweetId, String threadRootId) {
+    if (currentHeadlineTweetId.value != newHeadlineTweetId) {
+      currentHeadlineTweetId.value = newHeadlineTweetId;
+      currentThreadRootId.value = threadRootId;
+
+      forceRefresh();
+
+      print(
+        'Thread Headline Changed: $newHeadlineTweetId, Root: $threadRootId',
+      );
+    }
+  }
+
+  void resetThreadHeadline() {
+    currentHeadlineTweetId.value = '';
+    currentThreadRootId.value = '';
+  }
+
   // Tweet input state
   void updateTweetState() {
     isTweetEnabled.value =
@@ -56,7 +84,7 @@ class TweetController extends GetxController {
     isTweetEnabled.value = false;
   }
 
-  // Thread Management (Simplified)
+  // Thread Management
   void initThreadWithFirstTweet(String content, String? image) {
     threadTweetList.clear();
     threadTweetList.add(TweetContent(content: content, image: image));
@@ -134,6 +162,16 @@ class TweetController extends GetxController {
           tweets.value =
               snapshot.docs.map((doc) => Tweet.fromFirestore(doc)).toList();
         });
+  }
+
+  Future<Tweet> fetchTweetById(String tweetId) async {
+    try {
+      final doc = await _firestore.collection('tweets').doc(tweetId).get();
+      return Tweet.fromFirestore(doc);
+    } catch (e) {
+      print('Error fetching tweet by ID: $e');
+      rethrow;
+    }
   }
 
   // Like
@@ -276,7 +314,7 @@ class TweetController extends GetxController {
 
     try {
       final main = threadTweetList[0];
-      if (main.isEmpty) return; 
+      if (main.isEmpty) return;
 
       final mainDocRef = await _firestore.collection('tweets').add({
         'userId': userId,
@@ -288,7 +326,7 @@ class TweetController extends GetxController {
         'isPinned': false,
         'isThread': threadTweetList.length > 1,
         'parentTweetId': null,
-        'threadRootId': null, 
+        'threadRootId': null,
         'tweetId': '',
       });
 
@@ -311,14 +349,14 @@ class TweetController extends GetxController {
           'hasImage': reply.image != null && reply.image!.isNotEmpty,
           'isPinned': false,
           'isThread': true,
-          'parentTweetId': lastParentId, 
-          'threadRootId': rootId, 
+          'parentTweetId': lastParentId,
+          'threadRootId': rootId,
         });
 
         final replyId = replyDocRef.id;
         await replyDocRef.update({'tweetId': replyId});
 
-        lastParentId = replyId; 
+        lastParentId = replyId;
       }
 
       threadTweetList.clear();

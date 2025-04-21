@@ -6,6 +6,7 @@ import 'package:twitter_task/controller/user_controller.dart';
 import 'package:twitter_task/models/tweet_model.dart';
 import 'package:twitter_task/views/home/thread/thread_utils.dart';
 import 'package:twitter_task/widgets/bottomsheet_optiontweet.dart';
+import 'package:twitter_task/widgets/bottomsheet_retweet.dart';
 
 class ThreadHeadline extends StatelessWidget {
   final Tweet tweet;
@@ -18,7 +19,7 @@ class ThreadHeadline extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       decoration: BoxDecoration(
-         border: Border(
+        border: Border(
           bottom: BorderSide(color: Color(0xffCED5DC), width: 0.33),
         ),
         color: Colors.white,
@@ -26,7 +27,6 @@ class ThreadHeadline extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // User info
           FutureBuilder(
             future: Get.find<UserController>().getUserById(tweet.userId),
             builder: (context, snapshot) {
@@ -99,6 +99,7 @@ class ThreadHeadline extends StatelessWidget {
                 fontSize: 16,
                 color: Colors.black,
                 fontWeight: FontWeight.w600,
+                letterSpacing: -0.3,
               ),
             ),
           ),
@@ -129,7 +130,6 @@ class ThreadHeadline extends StatelessWidget {
             ),
           ),
 
-          // Stats row (likes, retweets, etc)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 5),
             child: Row(
@@ -143,15 +143,17 @@ class ThreadHeadline extends StatelessWidget {
             ),
           ),
 
-          // Actions row
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               _buildActionButton('assets/images/tweet_comment.png'),
               SizedBox(width: 40),
-              _buildActionButton('assets/images/tweet_retweet.png'),
+              GestureDetector(
+                onTap: showRetweetBottomSheet,
+                child: _buildActionButton('assets/images/tweet_retweet.png'),
+              ),
               SizedBox(width: 50),
-              _buildActionButton('assets/images/tweet_love.png'),
+              _buildActionLikeButton(),
               SizedBox(width: 50),
               _buildActionButton('assets/images/tweet_share.png'),
             ],
@@ -192,40 +194,46 @@ class ThreadHeadline extends StatelessWidget {
   }
 
   Widget _buildActionButton(String iconPath) {
-    if (iconPath == 'assets/images/tweet_love.png') {
-      return GestureDetector(
-        onTap: () {
-          tweetController.toggleLike(tweet.id, tweet.likesCount ?? 0);
-        },
-        child: Obx(() {
-          final isLiked = tweetController.isLiked(tweet.id);
-          return Row(
-            children: [
-              Image.asset(
-                isLiked
-                    ? 'assets/images/tweet_love_filled.png'
-                    : 'assets/images/tweet_love.png',
-                height: 16,
-                width: 16,
-                color: isLiked ? Colors.red : Color(0xff687684),
-              ),
-              SizedBox(width: 4),
-              Text(
-                '${tweet.likesCount ?? 0}',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: isLiked ? Colors.red : Color(0xff687684),
-                ),
-              ),
-            ],
-          );
-        }),
-      );
-    }
     return IconButton(
       icon: Image.asset(iconPath, width: 16, height: 16),
-      onPressed: () {},
+      onPressed:
+          iconPath == 'assets/images/tweet_retweet.png'
+              ? showRetweetBottomSheet
+              : () {
+                print('Action button pressed! $iconPath');
+              },
+    );
+  }
+
+  Widget _buildActionLikeButton() {
+    return GestureDetector(
+      onTap: () {
+        tweetController.toggleLike(tweet.id, tweet.likesCount ?? 0);
+      },
+      child: Obx(() {
+        final isLiked = tweetController.isLiked(tweet.id);
+        return Row(
+          children: [
+            Image.asset(
+              isLiked
+                  ? 'assets/images/tweet_love_filled.png'
+                  : 'assets/images/tweet_love.png',
+              height: 16,
+              width: 16,
+              color: isLiked ? Colors.red : Color(0xff687684),
+            ),
+            SizedBox(width: 4),
+            Text(
+              '${tweet.likesCount ?? 0}',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: isLiked ? Colors.red : Color(0xff687684),
+              ),
+            ),
+          ],
+        );
+      }),
     );
   }
 
@@ -235,6 +243,14 @@ class ThreadHeadline extends StatelessWidget {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => BottomSheetOptionTweet(tweetId: tweet.id),
+    );
+  }
+
+  void showRetweetBottomSheet() {
+    Get.bottomSheet(
+      BottomSheetRetweet(tweet: tweet),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
     );
   }
 }
