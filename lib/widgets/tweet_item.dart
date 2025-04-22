@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:twitter_task/controller/tweet_controller.dart';
@@ -19,6 +20,8 @@ class TweetItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    tweetController.fetchTweetById(tweet.id);
+
     return Container(
       padding: EdgeInsets.only(right: 18, left: 20, bottom: 10),
       decoration: BoxDecoration(
@@ -104,6 +107,7 @@ class TweetItem extends StatelessWidget {
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: -0.3,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                             SizedBox(width: 5),
                             Text(
@@ -114,7 +118,9 @@ class TweetItem extends StatelessWidget {
                                 color: Color(0xff687684),
                                 letterSpacing: -0.3,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
+
                           ],
                         );
                       },
@@ -203,10 +209,15 @@ class TweetItem extends StatelessWidget {
                         onTap: () {
                           showRetweetBottomSheet();
                         },
-                        child: _tweetIcon(
-                          'assets/images/tweet_retweet.png',
-                          '1',
-                        ),
+                        child: Obx(() {
+                          final updatedTweet = tweetController.tweetMap[tweet.id];
+                          final retweetsCount = updatedTweet?.retweetsCount ?? tweet.retweetsCount ?? 0;
+
+                          return _tweetIcon(
+                            'assets/images/tweet_retweet.png',
+                            retweetsCount.toString(),
+                          );
+                        }),
                       ),
 
                       GestureDetector(
@@ -217,7 +228,9 @@ class TweetItem extends StatelessWidget {
                           );
                         },
                         child: Obx(() {
+                          final updatedTweet = tweetController.tweetMap[tweet.id];
                           final isLiked = tweetController.isLiked(tweet.id);
+                          final likesCount = updatedTweet?.likesCount ?? tweet.likesCount ?? 0;
                           return Row(
                             children: [
                               Image.asset(

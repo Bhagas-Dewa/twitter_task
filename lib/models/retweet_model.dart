@@ -6,8 +6,9 @@ class Retweet {
   final String tweetId;
   final String originalTweetUserId;
   final DateTime timestamp;
-  final bool isQuote; // Tambahkan field untuk membedakan
-  final String? quoteText; // Gunakan untuk quote retweet
+  final bool isQuote; 
+  final String? quoteText; 
+  final int?likesCount;
 
   Retweet({
     required this.id,
@@ -17,6 +18,7 @@ class Retweet {
     required this.timestamp,
     this.isQuote = false,
     this.quoteText,
+    this.likesCount,
   });
 
   factory Retweet.fromFirestore(DocumentSnapshot doc) {
@@ -29,6 +31,7 @@ class Retweet {
       timestamp: (data['timestamp'] as Timestamp).toDate(),
       isQuote: data['isQuote'] ?? false,
       quoteText: data['quoteText'],
+      likesCount: data['likesCount'] ?? 0,
     );
   }
 
@@ -40,6 +43,7 @@ class Retweet {
       'timestamp': Timestamp.fromDate(timestamp),
       'isQuote': isQuote,
       'quoteText': quoteText,
+      'likesCount': likesCount,
     };
   }
 
@@ -51,6 +55,7 @@ class Retweet {
     DateTime? timestamp,
     bool? isQuote,
     String? quoteText,
+    int? likesCount,
   }) {
     return Retweet(
       id: id ?? this.id,
@@ -60,6 +65,7 @@ class Retweet {
       timestamp: timestamp ?? this.timestamp,
       isQuote: isQuote ?? this.isQuote,
       quoteText: quoteText ?? this.quoteText,
+      likesCount: likesCount ?? this.likesCount,
     );
   }
 }

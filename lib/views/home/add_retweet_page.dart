@@ -10,15 +10,20 @@ class AddRetweetPage extends StatelessWidget {
   final bool isQuoteRetweet;
 
   const AddRetweetPage({
-    Key? key, 
-    required this.tweet, 
-    this.isQuoteRetweet = false
+    Key? key,
+    required this.tweet,
+    this.isQuoteRetweet = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final RetweetController retweetController = Get.find();
     final UserController userController = Get.find();
+
+    print('Is Quote Retweet: $isQuoteRetweet');
+    print(
+      'Quote Text Controller: ${retweetController.quoteTextController.text}',
+    );
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -42,9 +47,21 @@ class AddRetweetPage extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () {
+                print(
+                  'Quote Text Before Retweet: ${retweetController.quoteTextController.text}',
+                );
+
                 if (isQuoteRetweet) {
-                  if (retweetController.quoteTextController.text.isNotEmpty) {
-                    retweetController.performQuoteRetweet(tweet);
+
+                  if (retweetController.quoteTextController.text
+                      .trim()
+                      .isNotEmpty) {
+                    final quoteText =
+                        retweetController.quoteTextController.text;
+
+                    print('Actual Quote Text: $quoteText');
+
+                    retweetController.performQuoteRetweet(tweet, quoteText);
                   } else {
                     Get.snackbar(
                       'Error',
@@ -85,16 +102,20 @@ class AddRetweetPage extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Profile picture
               if (isQuoteRetweet)
                 Obx(() {
                   final user = Get.find<UserController>().currentUser.value;
                   final imageProvider =
                       user?.profilePicture.isNotEmpty == true
                           ? MemoryImage(base64Decode(user!.profilePicture))
-                          : const AssetImage('assets/images/photoprofile_dummy.png')
+                          : const AssetImage(
+                                'assets/images/photoprofile_dummy.png',
+                              )
                               as ImageProvider;
-                  return CircleAvatar(radius: 22, backgroundImage: imageProvider);
+                  return CircleAvatar(
+                    radius: 22,
+                    backgroundImage: imageProvider,
+                  );
                 }),
 
               SizedBox(width: 8),
@@ -103,7 +124,6 @@ class AddRetweetPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // TextField for quote retweet
                     if (isQuoteRetweet)
                       TextField(
                         controller: retweetController.quoteTextController,
@@ -114,7 +134,7 @@ class AddRetweetPage extends StatelessWidget {
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
                           ),
-        
+
                           border: InputBorder.none,
                         ),
                         maxLines: null,
@@ -126,8 +146,8 @@ class AddRetweetPage extends StatelessWidget {
                       ),
 
                     SizedBox(height: 5),
-                    
-                    // Preview tweet yang akan diretweet
+
+                    // Preview tweet 
                     FutureBuilder(
                       future: userController.getUserById(tweet.userId),
                       builder: (context, snapshot) {
@@ -155,28 +175,35 @@ class AddRetweetPage extends StatelessWidget {
                               Row(
                                 children: [
                                   CircleAvatar(
-                                    backgroundImage: user.profilePicture.isNotEmpty
-                                        ? MemoryImage(base64Decode(user.profilePicture))
-                                        : AssetImage('assets/images/photoprofile_dummy.png') as ImageProvider,
+                                    backgroundImage:
+                                        user.profilePicture.isNotEmpty
+                                            ? MemoryImage(
+                                              base64Decode(user.profilePicture),
+                                            )
+                                            : AssetImage(
+                                                  'assets/images/photoprofile_dummy.png',
+                                                )
+                                                as ImageProvider,
                                     radius: 20,
                                   ),
                                   SizedBox(width: 10),
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        user.name, 
+                                        user.name,
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16,
-                                        )
+                                        ),
                                       ),
                                       Text(
-                                        user.username, 
+                                        user.username,
                                         style: TextStyle(
                                           color: Colors.grey,
                                           fontSize: 14,
-                                        )
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -185,9 +212,7 @@ class AddRetweetPage extends StatelessWidget {
                               SizedBox(height: 10),
                               Text(
                                 tweet.content,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                ),
+                                style: TextStyle(fontSize: 16),
                               ),
 
                               // Tambahkan preview gambar jika ada
@@ -201,12 +226,18 @@ class AddRetweetPage extends StatelessWidget {
                                         base64Decode(tweet.image!),
                                         fit: BoxFit.cover,
                                         width: double.infinity,
-                                        errorBuilder: (context, error, stackTrace) {
+                                        errorBuilder: (
+                                          context,
+                                          error,
+                                          stackTrace,
+                                        ) {
                                           return Container(
                                             color: Colors.grey[300],
                                             height: 200,
                                             child: Center(
-                                              child: Text("Failed to load image"),
+                                              child: Text(
+                                                "Failed to load image",
+                                              ),
                                             ),
                                           );
                                         },

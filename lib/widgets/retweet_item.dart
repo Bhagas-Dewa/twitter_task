@@ -170,9 +170,11 @@ class RetweetItem extends StatelessWidget {
                     // Quote text (jika ada)
                     if (retweet.isQuote && retweet.quoteText != null)
                       Padding(
-                        padding: const EdgeInsets.only(top: 2),
+                        padding: EdgeInsets.only(top: 2),
                         child: Text(
-                          retweet.quoteText!,
+                          () {
+                            return retweet.quoteText!;
+                          }(),
                           style: TextStyle(
                             fontFamily: 'Helveticalneue',
                             fontSize: 16,
@@ -203,28 +205,62 @@ class RetweetItem extends StatelessWidget {
                             Padding(
                               padding: const EdgeInsets.only(right: 60),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  _tweetIcon('assets/images/tweet_comment.png', '0'),
-                                  GestureDetector(
-                                    onTap: () {
-                                      _showRetweetBottomSheet(originalTweet);
-                                    },
-                                    child: _tweetIcon(
-                                      'assets/images/tweet_retweet.png',
-                                      originalTweet.retweetsCount.toString(),
-                                    ),
+                                  _tweetIcon(
+                                    'assets/images/tweet_comment.png',
+                                    '0',
                                   ),
                                   GestureDetector(
                                     onTap: () {
-                                      tweetController.toggleLike(
-                                        originalTweet.id,
-                                        originalTweet.likesCount ?? 0,
+                                      _showRetweetBottomSheet(
+                                        Tweet(
+                                          id: retweet.id,
+                                          userId: retweet.userId,
+                                          content: retweet.quoteText ?? '',
+                                          timestamp: retweet.timestamp,
+                                          image: null,
+                                          hasImage: false,
+                                          likesCount: retweet.likesCount,
+                                          retweetsCount: 0,
+                                          isRetweet: true,
+                                          originalTweetId: retweet.tweetId,
+                                          originalTweetUserId:
+                                              retweet.originalTweetUserId,
+                                          isPinned: false,
+                                          isDeleted: false,
+                                        ),
                                       );
                                     },
                                     child: Obx(() {
-                                      final isLiked = tweetController.isLiked(originalTweet.id);
-                                      return Row(
+                                      final tweet =
+                                          tweetController.tweetMap[retweet.id];
+                                      final retweetsCount =
+                                          tweet?.retweetsCount ?? 0;
+
+                                      return _tweetIcon(
+                                        'assets/images/tweet_retweet.png',
+                                        retweetsCount.toString(),
+                                      );
+                                    }),
+                                  ),
+                                  Obx(() {
+                                    final tweet =
+                                        tweetController.tweetMap[retweet.id];
+                                    final isLiked = tweetController.isLiked(
+                                      retweet.id,
+                                    );
+                                    final likesCount = tweet?.likesCount ?? 0;
+
+                                    return GestureDetector(
+                                      onTap: () {
+                                        tweetController.toggleLike(
+                                          retweet.id,
+                                          likesCount,
+                                        );
+                                      },
+                                      child: Row(
                                         children: [
                                           Image.asset(
                                             isLiked
@@ -232,22 +268,32 @@ class RetweetItem extends StatelessWidget {
                                                 : 'assets/images/tweet_love.png',
                                             height: 15,
                                             width: 15,
-                                            color: isLiked ? Colors.red : Color(0xff687684),
+                                            color:
+                                                isLiked
+                                                    ? Colors.red
+                                                    : Color(0xff687684),
                                           ),
                                           SizedBox(width: 4),
                                           Text(
-                                            '${originalTweet.likesCount ?? 0}',
+                                            '$likesCount',
                                             style: TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.bold,
-                                              color: isLiked ? Colors.red : Color(0xff687684),
+                                              color:
+                                                  isLiked
+                                                      ? Colors.red
+                                                      : Color(0xff687684),
                                             ),
                                           ),
                                         ],
-                                      );
-                                    }),
+                                      ),
+                                    );
+                                  }),
+
+                                  _tweetIcon(
+                                    'assets/images/tweet_share.png',
+                                    '',
                                   ),
-                                  _tweetIcon('assets/images/tweet_share.png', ''),
                                 ],
                               ),
                             ),
@@ -286,6 +332,19 @@ class RetweetItem extends StatelessWidget {
   }
 
   Widget _buildOriginalTweetPreview(Tweet tweet) {
+    if (tweet.isDeleted) {
+      return Container(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          border: Border.all(color: Color(0xFFBDC5CD), width: 0.3),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          'Tweet tidak tersedia',
+          style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+        ),
+      );
+    }
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
@@ -321,6 +380,7 @@ class RetweetItem extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       letterSpacing: -0.3,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(width: 5),
                   Text(
@@ -331,6 +391,7 @@ class RetweetItem extends StatelessWidget {
                       color: Color(0xff687684),
                       letterSpacing: -0.3,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                   Spacer(),
                   Text(
@@ -341,6 +402,7 @@ class RetweetItem extends StatelessWidget {
                       color: Color(0xff687684),
                       letterSpacing: -0.3,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               );
@@ -384,17 +446,47 @@ class RetweetItem extends StatelessWidget {
   }
 
   Future<Tweet> _fetchOriginalTweet(String tweetId) async {
-    return await tweetController.fetchTweetById(tweetId);
+    try {
+      final tweet = await tweetController.fetchTweetById(tweetId);
+
+      // Tambahkan pengecekan untuk tweet yang dihapus atau tidak tersedia
+      if (tweet.isDeleted) {
+        return Tweet(
+          id: tweetId,
+          userId: retweet.originalTweetUserId,
+          content: 'Tweet tidak tersedia',
+          timestamp: retweet.timestamp,
+          hasImage: false,
+          isPinned: false,
+          isDeleted: true,
+        );
+      }
+
+      return tweet;
+    } catch (e) {
+      // Jika gagal mengambil tweet
+      return Tweet(
+        id: tweetId,
+        userId: retweet.originalTweetUserId,
+        content: 'Tweet tidak tersedia',
+        timestamp: retweet.timestamp,
+        hasImage: false,
+        isPinned: false,
+        isDeleted: true,
+      );
+    }
   }
 
   Future<String> _getRetweetHeaderText() async {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
     if (retweet.userId == currentUserId) {
-      return "You Retweeted";
+      return retweet.isQuote ? "You Quote Retweeted" : "You Retweeted";
     } else {
       final user = await userController.getUserById(retweet.userId);
-      return "${user?.name ?? 'Someone'} Retweeted";
+      return retweet.isQuote
+          ? "${user?.name ?? 'You'} Retweeted"
+          : "${user?.name ?? 'You'} Retweeted";
     }
   }
 
@@ -403,7 +495,7 @@ class RetweetItem extends StatelessWidget {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => BottomSheetOptionTweet(tweetId: retweet.tweetId),
+      builder: (context) => BottomSheetOptionTweet(tweetId: retweet.id),
     );
   }
 

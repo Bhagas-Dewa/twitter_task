@@ -22,7 +22,6 @@ class ProfilePage extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          // Banner dan avatar
           SizedBox(
             height: bannerHeight + avatarRadius,
             child: Stack(

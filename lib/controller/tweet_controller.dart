@@ -24,6 +24,7 @@ class TweetController extends GetxController {
   var tweets = <Tweet>[].obs;
   var threadTweetList = <TweetContent>[].obs;
   var refreshTrigger = 0.obs;
+  var tweetMap = <String, Tweet>{}.obs;
 
   // Like & ownership
   var likedTweetIds = <String>{}.obs;
@@ -165,13 +166,10 @@ class TweetController extends GetxController {
   }
 
   Future<Tweet> fetchTweetById(String tweetId) async {
-    try {
-      final doc = await _firestore.collection('tweets').doc(tweetId).get();
-      return Tweet.fromFirestore(doc);
-    } catch (e) {
-      print('Error fetching tweet by ID: $e');
-      rethrow;
-    }
+    final doc = await _firestore.collection('tweets').doc(tweetId).get();
+    final tweet = Tweet.fromFirestore(doc);
+    tweetMap[tweetId] = tweet;
+    return tweet;
   }
 
   // Like
@@ -217,6 +215,14 @@ class TweetController extends GetxController {
       likedTweetIds.add(tweetId);
     }
     likedTweetIds.refresh();
+
+    try {
+      final updatedDoc = await tweetRef.get();
+      final updatedTweet = Tweet.fromFirestore(updatedDoc);
+      tweetMap[tweetId] = updatedTweet;
+    } catch (e) {
+      print("Error updating tweetMap after like: $e");
+    }
   }
 
   // Pinning

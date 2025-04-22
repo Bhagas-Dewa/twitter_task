@@ -9,16 +9,15 @@ class RetweetController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Observable untuk tracking retweet
   final RxSet<String> retweetedTweetIds = <String>{}.obs;
 
-  // Controller untuk quote retweet
   final TextEditingController quoteTextController = TextEditingController();
 
   @override
   void onInit() {
     super.onInit();
     fetchUserRetweets();
+    quoteTextController.clear();
   }
 
   @override
@@ -27,75 +26,76 @@ class RetweetController extends GetxController {
     super.onClose();
   }
 
-  // Cek apakah tweet sudah diretweet
   bool isRetweeted(String tweetId) {
     return retweetedTweetIds.contains(tweetId);
   }
 
-  // Fetch retweet yang dilakukan pengguna saat ini
   Future<void> fetchUserRetweets() async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return;
 
     try {
-      final snapshot = await _firestore
-          .collection('retweets')
-          .where('userId', isEqualTo: userId)
-          .get();
+      final snapshot =
+          await _firestore
+              .collection('retweets')
+              .where('userId', isEqualTo: userId)
+              .get();
 
-      retweetedTweetIds.value = 
+      retweetedTweetIds.value =
           snapshot.docs.map((doc) => doc['tweetId'] as String).toSet();
     } catch (e) {
       print('Error fetching user retweets: $e');
     }
   }
 
-  // Lakukan retweet standar
   Future<void> performStandardRetweet(Tweet tweet) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
 
     try {
-      // Cek apakah sudah diretweet
-      final existingRetweet = await _firestore
-          .collection('retweets')
-          .where('userId', isEqualTo: currentUser.uid)
-          .where('tweetId', isEqualTo: tweet.id)
-          .where('isQuote', isEqualTo: false)
-          .get();
-
-      // Gunakan transaction untuk konsistensi
       await _firestore.runTransaction((transaction) async {
         final tweetRef = _firestore.collection('tweets').doc(tweet.id);
 
+        final existingRetweet =
+            await _firestore
+                .collection('retweets')
+                .where('userId', isEqualTo: currentUser.uid)
+                .where('tweetId', isEqualTo: tweet.id)
+                .where('isQuote', isEqualTo: false)
+                .get();
+
         if (existingRetweet.docs.isNotEmpty) {
-          // Batalkan retweet jika sudah diretweet
           transaction.delete(existingRetweet.docs.first.reference);
           transaction.update(tweetRef, {
-            'retweetsCount': FieldValue.increment(-1)
+            'retweetsCount': FieldValue.increment(-1),
           });
           retweetedTweetIds.remove(tweet.id);
         } else {
-          // Tambahkan retweet baru
-          final newRetweetRef = _firestore.collection('retweets').doc();
-          final retweet = Retweet(
-            id: newRetweetRef.id,
-            userId: currentUser.uid,
-            tweetId: tweet.id,
-            originalTweetUserId: tweet.userId,
-            timestamp: DateTime.now(),
-            isQuote: false,
-          );
 
-          transaction.set(newRetweetRef, retweet.toFirestore());
+          final newTweetRef = _firestore.collection('tweets').doc();
+          final newTweet = {
+            'userId': currentUser.uid,
+            'text': tweet.content,
+            'image': tweet.image,
+            'timestamp': Timestamp.now(),
+            'isRetweet': true,
+            'originalTweetId': tweet.id,
+            'originalTweetUserId': tweet.userId,
+            'retweetsCount': 0,
+            'likesCount': 0,
+            'hasImage': tweet.hasImage,
+          };
+
+          transaction.set(newTweetRef, newTweet);
+
           transaction.update(tweetRef, {
-            'retweetsCount': FieldValue.increment(1)
+            'retweetsCount': FieldValue.increment(1),
           });
+
           retweetedTweetIds.add(tweet.id);
         }
       });
 
-      // Tampilkan notifikasi
       Get.snackbar(
         'Retweet',
         isRetweeted(tweet.id) ? 'Retweet berhasil' : 'Retweet dibatalkan',
@@ -113,60 +113,61 @@ class RetweetController extends GetxController {
     }
   }
 
-  // Lakukan quote retweet
-  Future<void> performQuoteRetweet(Tweet tweet) async {
-    final currentUser = _auth.currentUser;
-    if (currentUser == null || quoteTextController.text.isEmpty) return;
+  Future<void> performQuoteRetweet(Tweet tweet, String quoteText) async {
+  final currentUser = _auth.currentUser;
+  
+  if (currentUser == null || quoteText.isEmpty) return;
 
-    try {
-      // Gunakan transaction untuk konsistensi
-      await _firestore.runTransaction((transaction) async {
-        final tweetRef = _firestore.collection('tweets').doc(tweet.id);
-        final newRetweetRef = _firestore.collection('retweets').doc();
+  try {
+    await _firestore.runTransaction((transaction) async {
+      final tweetRef = _firestore.collection('tweets').doc(tweet.id);
+      final newTweetRef = _firestore.collection('tweets').doc();
 
-        final retweet = Retweet(
-          id: newRetweetRef.id,
-          userId: currentUser.uid,
-          tweetId: tweet.id,
-          originalTweetUserId: tweet.userId,
-          timestamp: DateTime.now(),
-          isQuote: true,
-          quoteText: quoteTextController.text,
-        );
+      final newTweet = {
+        'userId': currentUser.uid,
+        'text': quoteText, 
+        'image': null,
+        'timestamp': Timestamp.now(),
+        'isRetweet': true,
+        'isQuote': true,
+        'originalTweetId': tweet.id,
+        'originalTweetUserId': tweet.userId,
+        'quotedTweetContent': tweet.content, 
+        'quotedTweetId': tweet.id,
+        'quotedTweetUserId': tweet.userId,
+        'retweetsCount': 0,
+        'likesCount': 0,
+        'hasImage': false,
+      };
 
-        // Tambahkan quote retweet
-        transaction.set(newRetweetRef, retweet.toFirestore());
-        
-        // Naikkan jumlah retweet
-        transaction.update(tweetRef, {
-          'retweetsCount': FieldValue.increment(1)
-        });
+      transaction.set(newTweetRef, newTweet);
 
-        retweetedTweetIds.add(tweet.id);
+      transaction.update(tweetRef, {
+        'retweetsCount': FieldValue.increment(1),
       });
 
-      // Bersihkan text controller
-      quoteTextController.clear();
+      retweetedTweetIds.add(tweet.id);
+    });
 
-      // Tampilkan notifikasi
-      Get.snackbar(
-        'Quote Retweet',
-        'Quote retweet berhasil',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
-    } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Gagal melakukan quote retweet',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-      print('Quote Retweet error: $e');
-    }
+    quoteTextController.clear();
+
+    Get.snackbar(
+      'Quote Retweet',
+      'Quote retweet berhasil',
+      backgroundColor: Colors.green,
+      colorText: Colors.white,
+    );
+  } catch (e) {
+    print('Quote Retweet Error: $e');
+    Get.snackbar(
+      'Error',
+      'Gagal melakukan quote retweet',
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+    );
   }
+}
 
-  // Ambil jumlah retweet untuk tweet tertentu
   Future<int> getRetweetCount(String tweetId) async {
     try {
       final tweetDoc = await _firestore.collection('tweets').doc(tweetId).get();

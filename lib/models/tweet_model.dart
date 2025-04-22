@@ -9,13 +9,19 @@ class Tweet {
   final int? likesCount;
   final bool hasImage;
   final bool isPinned;
+
   final bool isThread;
   final String? parentTweetId;
   final String? threadRootId;
+
   final int retweetsCount;
-  final String? quotedTweetId; 
+  final String? quotedTweetId;
   final String? quotedTweetContent;
-  final String? quotedTweetUserId; 
+  final String? quotedTweetUserId;
+  final bool isDeleted;
+  final bool isRetweet;
+  final String? originalTweetId;
+  final String? originalTweetUserId;
 
   Tweet({
     required this.id,
@@ -27,12 +33,19 @@ class Tweet {
     this.retweetsCount = 0,
     required this.hasImage,
     required this.isPinned,
+
     this.isThread = false,
     this.parentTweetId,
     this.threadRootId,
+
     this.quotedTweetId,
     this.quotedTweetContent,
     this.quotedTweetUserId,
+
+    this.isDeleted = false,
+    this.isRetweet = false,
+    this.originalTweetId,
+    this.originalTweetUserId,
   });
 
   factory Tweet.fromFirestore(DocumentSnapshot doc) {
@@ -53,6 +66,10 @@ class Tweet {
       quotedTweetId: data['quotedTweetId'],
       quotedTweetContent: data['quotedTweetContent'],
       quotedTweetUserId: data['quotedTweetUserId'],
+      isDeleted: data['isDeleted'] ?? false,
+      isRetweet: data['isRetweet'] ?? false,
+      originalTweetId: data['originalTweetId'],
+      originalTweetUserId: data['originalTweetUserId'],
     );
   }
 
@@ -72,6 +89,10 @@ class Tweet {
       'quotedTweetId': quotedTweetId,
       'quotedTweetContent': quotedTweetContent,
       'quotedTweetUserId': quotedTweetUserId,
+      'isDeleted': isDeleted,
+      'isRetweet': isRetweet,
+      'originalTweetId': originalTweetId,
+      'originalTweetUserId': originalTweetUserId,
     };
   }
 
@@ -91,6 +112,10 @@ class Tweet {
     String? quotedTweetId,
     String? quotedTweetContent,
     String? quotedTweetUserId,
+    bool? isDeleted,
+    bool? isRetweet,
+    String? originalTweetId,
+    String? originalTweetUserId,
   }) {
     return Tweet(
       id: id ?? this.id,
@@ -108,6 +133,10 @@ class Tweet {
       quotedTweetId: quotedTweetId ?? this.quotedTweetId,
       quotedTweetContent: quotedTweetContent ?? this.quotedTweetContent,
       quotedTweetUserId: quotedTweetUserId ?? this.quotedTweetUserId,
+      isDeleted: isDeleted ?? this.isDeleted,
+      isRetweet: isRetweet ?? this.isRetweet,
+      originalTweetId: originalTweetId ?? this.originalTweetId,
+      originalTweetUserId: originalTweetUserId ?? this.originalTweetUserId,
     );
   }
 }

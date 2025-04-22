@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:twitter_task/controller/auth_controller.dart';
 import 'package:twitter_task/controller/tweet_controller.dart';
+import 'package:twitter_task/models/retweet_model.dart';
+import 'package:twitter_task/models/tweet_model.dart';
 import 'package:twitter_task/views/home/addtweet_page.dart';
 import 'package:twitter_task/widgets/appbar_home.dart';
 import 'package:twitter_task/widgets/bottom_navbar.dart';
@@ -35,18 +37,15 @@ class HomePage extends StatelessWidget {
             itemBuilder: (context, index) {
               final item = homeController.feedItems[index];
 
-              if (item['type'] == 'tweet') {
-                final tweet = item['data'];
-
-                // Cek apakah tweet adalah thread
-                // Anda bisa menambahkan kondisi untuk thread di sini
+               if (item['type'] == 'tweet') {
+                final tweet = item['data'] as Tweet;
                 return TweetItem(tweet: tweet);
               } else if (item['type'] == 'retweet') {
-                final retweet = item['data'];
+                final retweet = item['data'] as Retweet;
                 return RetweetItem(retweet: retweet);
               }
 
-              return SizedBox.shrink(); // Fallback
+              return SizedBox.shrink(); 
             },
           ),
         );

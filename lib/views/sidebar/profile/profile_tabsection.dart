@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:twitter_task/controller/profile_controller.dart';
 import 'package:twitter_task/views/sidebar/profile/tab/tab_likes.dart';
 import 'package:twitter_task/views/sidebar/profile/tab/tab_media.dart';
+import 'package:twitter_task/views/sidebar/profile/tab/tab_replies.dart';
 import 'package:twitter_task/views/sidebar/profile/tab/tab_tweets.dart';
 
 class ProfileTabSection extends StatelessWidget {
@@ -45,6 +46,7 @@ class ProfileTabSection extends StatelessWidget {
             controller: controller.tabController,
             children: controller.tabs.map((tab) {
               if (tab == "Likes") return LikedTweetsTab();
+              if (tab == "Replies") return RepliesTab();
               if (tab == "Media") return MediaTab();
               if (tab == "Tweets") return TweetsTab();
               return Center(child: Text('Konten $tab'));
