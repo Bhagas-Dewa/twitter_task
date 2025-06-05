@@ -12,7 +12,20 @@
           "package_name": "com.example.twitter_task"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "92826655668-qmbs4ifh5gj3h2u2spjalc8fdbebkqle.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.twitter_task",
+            "certificate_hash": "df3b1744c892e6e25a1e35b137d44df38809e527"
+          }
+        },
+        {
+          "client_id": "92826655668-t0l21j4tvpfvsmg4jg3622cnuvqojslh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyB3VBBaQg9DxsUzR9E-ndRXaoj3eKCIqdQ"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "92826655668-t0l21j4tvpfvsmg4jg3622cnuvqojslh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "92826655668-dhi0nivut23dqblv9fv0t5plfqbtmle2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.twitterTask"
+              }
+            }
+          ]
         }
       }
     }
